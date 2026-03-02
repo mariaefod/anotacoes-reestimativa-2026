@@ -1,0 +1,14 @@
+site_name: Página teste
+site_url: https://mariaefod.github.io/teste/
+theme:
+  name: material
+  palette:
+    scheme: slate
+    primary: teal
+    accent: deep purple
+  font:
+    text: Roboto
+    code: Roboto Mono
+
+plugins:
+  - blog
