@@ -1,7 +1,7 @@
 site_name: Reestimativa
 site_url: mariaefod.github.io/repositorio-pessoal/
 theme:
-  name: zensical
+  name: material
   palette:
     scheme: slate
     primary: teal
