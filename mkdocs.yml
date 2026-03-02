@@ -1,7 +1,7 @@
-site_name: Página teste
-site_url: https://mariaefod.github.io/teste/
+site_name: Reestimativa
+site_url: mariaefod.github.io/repositorio-pessoal/
 theme:
-  name: material
+  name: zensical
   palette:
     scheme: slate
     primary: teal
