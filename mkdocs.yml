@@ -1,14 +1,1 @@
-site_name: Reestimativa
-site_url: https://mariaefod.github.io/repositorio-pessoal/
-theme:
-  name: material
-  palette:
-    scheme: slate
-    primary: teal
-    accent: deep purple
-  font:
-    text: Roboto
-    code: Roboto Mono
-
-plugins:
-  - blog
+site_name: My Docs
