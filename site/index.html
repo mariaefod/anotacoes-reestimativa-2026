@@ -360,452 +360,348 @@
 </span><span id="__span-5-33"><a id="__codelineno-5-33" name="__codelineno-5-33" href="#__codelineno-5-33"></a>copy_exec_alem_credito:
 </span><span id="__span-5-34"><a id="__codelineno-5-34" name="__codelineno-5-34" href="#__codelineno-5-34"></a>    @Rscript --verbose config/R/copy.R $@ 2&gt; logs/log.Rout
 </span></code></pre></div>
-<p>O comando "copy_exec" chama os "TARGETS_COPY_EXEC".</p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>TARGETS_COPY_EXEC := $(shell Rscript --verbose config/R/get_targets_copy.R exec 2&gt; logs/log.Rout)
+<ul>
+<li>
+<p><strong>copy_exec</strong>: garante que o alvo principal dependa de todos os "TARGETS_COPY_EXEC".</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>copy_exec: $(TARGETS_COPY_EXEC)
+</span></code></pre></div>
+</li>
+<li>
+<p><strong>TARGETS_COPY_EXEC</strong>: retorna "copy_exec_...", conforme nomes listados com "yes" no "munge_base" do arquivo "config.yaml"</p>
+<details class="note">
+<summary>TARGETS_COPY_EXEC</summary>
+<p>Contém os nomes do "munge_base" com "copy_" no começo, e eles são selecionados com base no "yes" ou "no". Isto feito, na hora que o "copy_exec" é chamado no ".bat", ele irá apenas chamar os "copy_" desejados.</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>TARGETS_COPY_EXEC := $(shell Rscript --verbose config/R/get_targets_copy.R exec 2&gt; logs/log.Rout)
 </span></code></pre></div>
 <ul>
-<li><code>$(shell ...)</code> é executado quando o Makefile é lido (fase de parse, por causa do ":="), antes de construir os targets. E os targets seriam os que estão no "get_targets_copy.R".</li>
+<li><strong>$(shell ...)</strong>: é executado quando o Makefile é lido (fase de parse, por causa do ":="), antes de construir os targets. E os targets seriam os que estão no "get_targets_copy.R".</li>
 </ul>
 <details class="note">
 <summary>get_targets_copy.R</summary>
-<p>Originalmente, o código está como:</p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>config &lt;- yaml::yaml.load_file(&quot;config/config.yaml&quot;)
-</span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>
-</span><span id="__span-7-3"><a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a>stem &lt;- names(config$munge_base)[as.logical(config$munge_base)]
-</span><span id="__span-7-4"><a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a>
-</span><span id="__span-7-5"><a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a>args &lt;- commandArgs(trailingOnly = TRUE)
-</span><span id="__span-7-6"><a id="__codelineno-7-6" name="__codelineno-7-6" href="#__codelineno-7-6"></a>
-</span><span id="__span-7-7"><a id="__codelineno-7-7" name="__codelineno-7-7" href="#__codelineno-7-7"></a>regex &lt;- paste0(&quot;^&quot;, args, &quot;_&quot;)
-</span><span id="__span-7-8"><a id="__codelineno-7-8" name="__codelineno-7-8" href="#__codelineno-7-8"></a>
-</span><span id="__span-7-9"><a id="__codelineno-7-9" name="__codelineno-7-9" href="#__codelineno-7-9"></a>stem &lt;- stem[grepl(regex, stem)]
-</span><span id="__span-7-10"><a id="__codelineno-7-10" name="__codelineno-7-10" href="#__codelineno-7-10"></a>
-</span><span id="__span-7-11"><a id="__codelineno-7-11" name="__codelineno-7-11" href="#__codelineno-7-11"></a>if(is.character(stem) &amp; length(stem) == 0) {
-</span><span id="__span-7-12"><a id="__codelineno-7-12" name="__codelineno-7-12" href="#__codelineno-7-12"></a>  targets &lt;- &quot;&quot;
-</span><span id="__span-7-13"><a id="__codelineno-7-13" name="__codelineno-7-13" href="#__codelineno-7-13"></a>} else {
-</span><span id="__span-7-14"><a id="__codelineno-7-14" name="__codelineno-7-14" href="#__codelineno-7-14"></a>  targets &lt;- paste0(&quot;copy_&quot;, stem)
-</span><span id="__span-7-15"><a id="__codelineno-7-15" name="__codelineno-7-15" href="#__codelineno-7-15"></a>}
-</span><span id="__span-7-16"><a id="__codelineno-7-16" name="__codelineno-7-16" href="#__codelineno-7-16"></a>
-</span><span id="__span-7-17"><a id="__codelineno-7-17" name="__codelineno-7-17" href="#__codelineno-7-17"></a>write(targets, file = stdout())
+<p>O "stem" pesquisa os argumentos de linha de comando (retornados pela função "commandArgs") dentro da lista de valores verdadeiros do "munge_base" (em "config"). No caso, o argumento de linha de comando é "exec".</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>TARGETS_COPY_EXEC := $(shell Rscript --verbose config/R/get_targets_copy.R exec 2&gt; logs/log.Rout).
 </span></code></pre></div>
-<p>Unindo algumas informações:</p>
-<p><div class="language-text highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>config &lt;- yaml::yaml.load_file(&quot;config/config.yaml&quot;)
-</span><span id="__span-8-2"><a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a>
-</span><span id="__span-8-3"><a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a>stem &lt;- grepl(paste0(&quot;^&quot;, commandArgs(trailingOnly = TRUE), &quot;_&quot;), names(config$munge_base)[as.logical(config$munge_base)])
-</span><span id="__span-8-4"><a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a>
-</span><span id="__span-8-5"><a id="__codelineno-8-5" name="__codelineno-8-5" href="#__codelineno-8-5"></a>if(is.character(stem) &amp; length(stem) == 0) {
-</span><span id="__span-8-6"><a id="__codelineno-8-6" name="__codelineno-8-6" href="#__codelineno-8-6"></a>  targets &lt;- &quot;&quot;
-</span><span id="__span-8-7"><a id="__codelineno-8-7" name="__codelineno-8-7" href="#__codelineno-8-7"></a>} else {
-</span><span id="__span-8-8"><a id="__codelineno-8-8" name="__codelineno-8-8" href="#__codelineno-8-8"></a>  targets &lt;- paste0(&quot;copy_&quot;, stem)
-</span><span id="__span-8-9"><a id="__codelineno-8-9" name="__codelineno-8-9" href="#__codelineno-8-9"></a>}
-</span><span id="__span-8-10"><a id="__codelineno-8-10" name="__codelineno-8-10" href="#__codelineno-8-10"></a>
-</span><span id="__span-8-11"><a id="__codelineno-8-11" name="__codelineno-8-11" href="#__codelineno-8-11"></a>write(targets, file = stdout())
+<p>O output do "get_targets_copy.R" seria como "copy_target", por exemplo "copy_exec_rec", caso "exec_rec" esteja como "yes".</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a>config &lt;- yaml::yaml.load_file(&quot;config/config.yaml&quot;)    # lê o arquivo &quot;congif.yaml&quot;
+</span><span id="__span-9-2"><a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a>
+</span><span id="__span-9-3"><a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a>stem &lt;- names(config$munge_base)[as.logical(config$munge_base)]    # lista os nomes com &quot;yes&quot; no &quot;munge_base&quot;
+</span><span id="__span-9-4"><a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a>
+</span><span id="__span-9-5"><a id="__codelineno-9-5" name="__codelineno-9-5" href="#__codelineno-9-5"></a>args &lt;- commandArgs(trailingOnly = TRUE)    # retorna argumentos de linha de comando (no caso, &quot;exec&quot;)
+</span><span id="__span-9-6"><a id="__codelineno-9-6" name="__codelineno-9-6" href="#__codelineno-9-6"></a>
+</span><span id="__span-9-7"><a id="__codelineno-9-7" name="__codelineno-9-7" href="#__codelineno-9-7"></a>regex &lt;- paste0(&quot;^&quot;, args, &quot;_&quot;)    # concatena &quot;^exec_&quot;
+</span><span id="__span-9-8"><a id="__codelineno-9-8" name="__codelineno-9-8" href="#__codelineno-9-8"></a>
+</span><span id="__span-9-9"><a id="__codelineno-9-9" name="__codelineno-9-9" href="#__codelineno-9-9"></a>stem &lt;- stem[grepl(regex, stem)]    # pesquisa quem começa com &quot;exec_&quot; na lista do &quot;munge_base&quot; com &quot;yes&quot;
+</span><span id="__span-9-10"><a id="__codelineno-9-10" name="__codelineno-9-10" href="#__codelineno-9-10"></a>
+</span><span id="__span-9-11"><a id="__codelineno-9-11" name="__codelineno-9-11" href="#__codelineno-9-11"></a>if(is.character(stem) &amp; length(stem) == 0) {    # se &quot;stem&quot; for &quot;character&quot;, mas vier zerado
+</span><span id="__span-9-12"><a id="__codelineno-9-12" name="__codelineno-9-12" href="#__codelineno-9-12"></a>  targets &lt;- &quot;&quot;    # retorna que &quot;targets&quot; é vazio
+</span><span id="__span-9-13"><a id="__codelineno-9-13" name="__codelineno-9-13" href="#__codelineno-9-13"></a>} else {    # em outros casos
+</span><span id="__span-9-14"><a id="__codelineno-9-14" name="__codelineno-9-14" href="#__codelineno-9-14"></a>  targets &lt;- paste0(&quot;copy_&quot;, stem)    # coloca &quot;copy_&quot; no começo do nome
+</span><span id="__span-9-15"><a id="__codelineno-9-15" name="__codelineno-9-15" href="#__codelineno-9-15"></a>}
+</span><span id="__span-9-16"><a id="__codelineno-9-16" name="__codelineno-9-16" href="#__codelineno-9-16"></a>
+</span><span id="__span-9-17"><a id="__codelineno-9-17" name="__codelineno-9-17" href="#__codelineno-9-17"></a>write(targets, file = stdout())    # escreve os targets no console
 </span></code></pre></div>
-O "config" lê o arquivo congif.yaml.</p>
-<p>O "stem" pesquisa os argumentos de linha de comando (retornados pela função "commandArgs") dentro da lista de valores verdadeiros do "munge_base" (em "config"). Os argumentos de linha de comando são os do <code>exec</code> que está definido no comando "TARGETS_COPY_EXEC" (os "exec" podem ser consultados no "config.yaml")</p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a>copy:
-</span><span id="__span-9-2"><a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a>  (...)
-</span><span id="__span-9-3"><a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a>  exec:
-</span><span id="__span-9-4"><a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a>    dir: gmail
-</span><span id="__span-9-5"><a id="__codelineno-9-5" name="__codelineno-9-5" href="#__codelineno-9-5"></a>    files:
-</span><span id="__span-9-6"><a id="__codelineno-9-6" name="__codelineno-9-6" href="#__codelineno-9-6"></a>      copy_exec_rec: exec_rec.xlsx
-</span><span id="__span-9-7"><a id="__codelineno-9-7" name="__codelineno-9-7" href="#__codelineno-9-7"></a>      copy_exec_desp: exec_desp.xlsx
-</span><span id="__span-9-8"><a id="__codelineno-9-8" name="__codelineno-9-8" href="#__codelineno-9-8"></a>      copy_exec_rp: exec_rp.xlsx
-</span><span id="__span-9-9"><a id="__codelineno-9-9" name="__codelineno-9-9" href="#__codelineno-9-9"></a>      copy_exec_rp_folha: exec_rp_folha.xlsx
-</span><span id="__span-9-10"><a id="__codelineno-9-10" name="__codelineno-9-10" href="#__codelineno-9-10"></a>      copy_exec_suplementacao: exec_suplementacao.xlsx
-</span><span id="__span-9-11"><a id="__codelineno-9-11" name="__codelineno-9-11" href="#__codelineno-9-11"></a>      copy_exec_pago_orc: exec_pago_orc.xlsx
-</span><span id="__span-9-12"><a id="__codelineno-9-12" name="__codelineno-9-12" href="#__codelineno-9-12"></a>      copy_exec_cota: exec_cota.xlsx
-</span><span id="__span-9-13"><a id="__codelineno-9-13" name="__codelineno-9-13" href="#__codelineno-9-13"></a>      copy_exec_cred_aut_desp: cred_aut_desp.xlsx
-</span><span id="__span-9-14"><a id="__codelineno-9-14" name="__codelineno-9-14" href="#__codelineno-9-14"></a>      copy_exec_alem_credito: exec_alem_credito.xlsx
-</span><span id="__span-9-15"><a id="__codelineno-9-15" name="__codelineno-9-15" href="#__codelineno-9-15"></a>
-</span><span id="__span-9-16"><a id="__codelineno-9-16" name="__codelineno-9-16" href="#__codelineno-9-16"></a>#--------------------------------------------------------------------
-</span><span id="__span-9-17"><a id="__codelineno-9-17" name="__codelineno-9-17" href="#__codelineno-9-17"></a>munge_base:
-</span><span id="__span-9-18"><a id="__codelineno-9-18" name="__codelineno-9-18" href="#__codelineno-9-18"></a>  ldo_rec: no
-</span><span id="__span-9-19"><a id="__codelineno-9-19" name="__codelineno-9-19" href="#__codelineno-9-19"></a>  ldo_desp: no
-</span><span id="__span-9-20"><a id="__codelineno-9-20" name="__codelineno-9-20" href="#__codelineno-9-20"></a>  loa_rec: yes
-</span><span id="__span-9-21"><a id="__codelineno-9-21" name="__codelineno-9-21" href="#__codelineno-9-21"></a>  loa_desp: yes
-</span><span id="__span-9-22"><a id="__codelineno-9-22" name="__codelineno-9-22" href="#__codelineno-9-22"></a>  ploa_rec: no
-</span><span id="__span-9-23"><a id="__codelineno-9-23" name="__codelineno-9-23" href="#__codelineno-9-23"></a>  ploa_desp: no
-</span><span id="__span-9-24"><a id="__codelineno-9-24" name="__codelineno-9-24" href="#__codelineno-9-24"></a>  reest_rec: yes
-</span><span id="__span-9-25"><a id="__codelineno-9-25" name="__codelineno-9-25" href="#__codelineno-9-25"></a>  reest_desp: yes
-</span><span id="__span-9-26"><a id="__codelineno-9-26" name="__codelineno-9-26" href="#__codelineno-9-26"></a>  exec_rec: yes
-</span><span id="__span-9-27"><a id="__codelineno-9-27" name="__codelineno-9-27" href="#__codelineno-9-27"></a>  exec_desp: yes
-</span><span id="__span-9-28"><a id="__codelineno-9-28" name="__codelineno-9-28" href="#__codelineno-9-28"></a>  exec_rp: yes
-</span><span id="__span-9-29"><a id="__codelineno-9-29" name="__codelineno-9-29" href="#__codelineno-9-29"></a>  exec_rp_folha: yes
-</span><span id="__span-9-30"><a id="__codelineno-9-30" name="__codelineno-9-30" href="#__codelineno-9-30"></a>  exec_suplementacao: yes
-</span><span id="__span-9-31"><a id="__codelineno-9-31" name="__codelineno-9-31" href="#__codelineno-9-31"></a>  exec_pago_orc: yes
-</span><span id="__span-9-32"><a id="__codelineno-9-32" name="__codelineno-9-32" href="#__codelineno-9-32"></a>  exec_cota: yes
-</span><span id="__span-9-33"><a id="__codelineno-9-33" name="__codelineno-9-33" href="#__codelineno-9-33"></a>  exec_cred_aut_desp: yes
-</span><span id="__span-9-34"><a id="__codelineno-9-34" name="__codelineno-9-34" href="#__codelineno-9-34"></a>  exec_alem_credito: yes
+<details class="note">
+<summary>munge_base</summary>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a>munge_base:
+</span><span id="__span-10-2"><a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a>  ldo_rec: no
+</span><span id="__span-10-3"><a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a>  ldo_desp: no
+</span><span id="__span-10-4"><a id="__codelineno-10-4" name="__codelineno-10-4" href="#__codelineno-10-4"></a>  loa_rec: yes
+</span><span id="__span-10-5"><a id="__codelineno-10-5" name="__codelineno-10-5" href="#__codelineno-10-5"></a>  loa_desp: yes
+</span><span id="__span-10-6"><a id="__codelineno-10-6" name="__codelineno-10-6" href="#__codelineno-10-6"></a>  ploa_rec: no
+</span><span id="__span-10-7"><a id="__codelineno-10-7" name="__codelineno-10-7" href="#__codelineno-10-7"></a>  ploa_desp: no
+</span><span id="__span-10-8"><a id="__codelineno-10-8" name="__codelineno-10-8" href="#__codelineno-10-8"></a>  reest_rec: yes
+</span><span id="__span-10-9"><a id="__codelineno-10-9" name="__codelineno-10-9" href="#__codelineno-10-9"></a>  reest_desp: yes
+</span><span id="__span-10-10"><a id="__codelineno-10-10" name="__codelineno-10-10" href="#__codelineno-10-10"></a>  exec_rec: yes
+</span><span id="__span-10-11"><a id="__codelineno-10-11" name="__codelineno-10-11" href="#__codelineno-10-11"></a>  exec_desp: yes
+</span><span id="__span-10-12"><a id="__codelineno-10-12" name="__codelineno-10-12" href="#__codelineno-10-12"></a>  exec_rp: yes
+</span><span id="__span-10-13"><a id="__codelineno-10-13" name="__codelineno-10-13" href="#__codelineno-10-13"></a>  exec_rp_folha: yes
+</span><span id="__span-10-14"><a id="__codelineno-10-14" name="__codelineno-10-14" href="#__codelineno-10-14"></a>  exec_suplementacao: yes
+</span><span id="__span-10-15"><a id="__codelineno-10-15" name="__codelineno-10-15" href="#__codelineno-10-15"></a>  exec_pago_orc: yes
+</span><span id="__span-10-16"><a id="__codelineno-10-16" name="__codelineno-10-16" href="#__codelineno-10-16"></a>  exec_cota: yes
+</span><span id="__span-10-17"><a id="__codelineno-10-17" name="__codelineno-10-17" href="#__codelineno-10-17"></a>  exec_cred_aut_desp: yes
+</span><span id="__span-10-18"><a id="__codelineno-10-18" name="__codelineno-10-18" href="#__codelineno-10-18"></a>  exec_alem_credito: yes
 </span></code></pre></div>
-<p>O output seria como "copy_target", por exemplo "copy_exec_rec", caso "exec_rec" esteja como "yes".</p>
-<ul>
-<li>Observação: o "^" é para buscar os caracteres desejados apenas no começo da string (ex.: grepl("^cat", c("catapult", "location", "dog")) retorna true, false, false).</li>
-</ul>
+</details>
 </details>
 <ul>
 <li>
-<p>Rscript --verbose: Roda o script R "config/R/get_targets_copy.R" com a flag "--verbose" (que faz o Rscript escrever mensagens detalhadas — normalmente no "stderr").</p>
+<p><strong>Rscript --verbose</strong>: roda o script R "config/R/get_targets_copy.R" com a flag "--verbose" (que faz o Rscript escrever mensagens detalhadas — normalmente no "stderr").</p>
 </li>
 <li>
-<p>2&gt; logs/log.Rout: redireciona o "stderr" do processo para o arquivo de log.</p>
-</li>
-<li>
-<p><strong>O que entendi</strong>: o "cody_exec" vai targetar os "targets_copy_exec". Os "targets_copy_exec" contém os nomes dos files do "exec" com "copy_" no começo, e esses files são selecionados com base no "yes" ou "no" do "munge_base". Isto feito, na hora que o "copy_exec" é chamado no ".bat", ele irá apenas chamar os "copy_" desejados.</p>
+<p><strong>2&gt; logs/log.Rout</strong>: redireciona o "stderr" do processo para o arquivo de log.</p>
 </li>
 </ul>
-<h2 id="copy_exec_rec-exemplo">copy_exec_rec (exemplo)<a class="headerlink" href="#copy_exec_rec-exemplo" title="Permanent link">&para;</a></h2>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a>@Rscript --verbose config/R/copy.R $@ 2&gt; logs/log.Rout
+</details>
+</li>
+<li>
+<p><strong>copy_exec_rec (exemplo)</strong>: baixa o arquivo "exec_rec.xlsx" do e-mail na pasta "data-row", além de limpar filtro e formatação da planilha.</p>
+<details class="note">
+<summary>copy_exec_exec</summary>
+<p>Caso o "copy_exec_rec" seja um target, ele será listado no "copy_exec".</p>
+<p>Assim, irá executar o script R "copy.R", que salva o arquivo "exec_rec.xlsx" na pasta "data-row", oriundo do e-mail mais recente recebido.</p>
+<p>Esse arquivo passa ainda por um tratamento de limpar seus filtros e formatação.</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-11-1"><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a>@Rscript --verbose config/R/copy.R $@ 2&gt; logs/log.Rout
 </span></code></pre></div>
-<p>Caso o "copy_exec_rec" seja um target, ele será chamado pelo "copy_exec". Assim, irá executar o script R "copy.R".</p>
 <ul>
-<li>$@: chama ele próprio (copy_exec_rec)</li>
+<li><strong>$@</strong>: chama ele próprio (copy_exec_rec)</li>
 </ul>
 <details class="note">
 <summary>copy.R</summary>
-<p>Originalmente, o código está como:</p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-11-1"><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a>suppressPackageStartupMessages(library(gmailr))
-</span><span id="__span-11-2"><a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a>source(&quot;config/R/helper_copy.R&quot;)
-</span><span id="__span-11-3"><a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a>
-</span><span id="__span-11-4"><a id="__codelineno-11-4" name="__codelineno-11-4" href="#__codelineno-11-4"></a>arg &lt;- commandArgs(trailingOnly = TRUE)
-</span><span id="__span-11-5"><a id="__codelineno-11-5" name="__codelineno-11-5" href="#__codelineno-11-5"></a>base &lt;- guess_base(arg)
-</span><span id="__span-11-6"><a id="__codelineno-11-6" name="__codelineno-11-6" href="#__codelineno-11-6"></a>yml &lt;- yaml::yaml.load_file(&quot;config/config.yaml&quot;)$copy[[base]]
-</span><span id="__span-11-7"><a id="__codelineno-11-7" name="__codelineno-11-7" href="#__codelineno-11-7"></a>
-</span><span id="__span-11-8"><a id="__codelineno-11-8" name="__codelineno-11-8" href="#__codelineno-11-8"></a>if(yml$dir == &quot;gmail&quot;) {
-</span><span id="__span-11-9"><a id="__codelineno-11-9" name="__codelineno-11-9" href="#__codelineno-11-9"></a># options(httr_oob_default = TRUE)
-</span><span id="__span-11-10"><a id="__codelineno-11-10" name="__codelineno-11-10" href="#__codelineno-11-10"></a>  copy_gmail(yml$files[[arg]])
-</span><span id="__span-11-11"><a id="__codelineno-11-11" name="__codelineno-11-11" href="#__codelineno-11-11"></a>} else if(grepl(&quot;^@dcaf&quot;, yml$dir)) {
-</span><span id="__span-11-12"><a id="__codelineno-11-12" name="__codelineno-11-12" href="#__codelineno-11-12"></a>  copy_scppo(yml$files[[arg]], yml$dir)
-</span><span id="__span-11-13"><a id="__codelineno-11-13" name="__codelineno-11-13" href="#__codelineno-11-13"></a>} else {
-</span><span id="__span-11-14"><a id="__codelineno-11-14" name="__codelineno-11-14" href="#__codelineno-11-14"></a>  copy_local(yml$files[[arg]], yml$dir)
-</span><span id="__span-11-15"><a id="__codelineno-11-15" name="__codelineno-11-15" href="#__codelineno-11-15"></a>}
-</span><span id="__span-11-16"><a id="__codelineno-11-16" name="__codelineno-11-16" href="#__codelineno-11-16"></a>
-</span><span id="__span-11-17"><a id="__codelineno-11-17" name="__codelineno-11-17" href="#__codelineno-11-17"></a>clean_excel(from = yml$files[[arg]], to = make_path(arg))
-</span></code></pre></div>
-<ul>
-<li>
-<p><code>arg</code>: é o nome do "copy_" (ex.: "copy_exec_rec")</p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-12-1"><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a>arg &lt;- commandArgs(trailingOnly = TRUE)
-</span></code></pre></div>
-</li>
-<li>
-<p><code>base</code>: lê o "arg" e retorna a palavra depois do primeiro "_" (ex.: "exec")</p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-13-1"><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a>base &lt;- guess_base(arg)
+<p>O "copy.R", especialmente para o "copy_exec" e mais ainda para o "copy_exec_rec" (exemplo), irá buscar pelo arquivo "exec_rec.xlsx" "mais recente" nos email da "<a href="&#109;&#97;&#105;&#108;&#116;&#111;&#58;&#100;&#99;&#103;&#99;&#101;&#46;&#115;&#101;&#112;&#108;&#97;&#103;&#64;&#103;&#109;&#97;&#105;&#108;&#46;&#99;&#111;&#109;">&#100;&#99;&#103;&#99;&#101;&#46;&#115;&#101;&#112;&#108;&#97;&#103;&#64;&#103;&#109;&#97;&#105;&#108;&#46;&#99;&#111;&#109;</a>" e irá salvar o seu respectivo anexo na pasta "data-row".</p>
+<p>Além disso, usa a função "clean_excel()" para limpar os filtros e a formatação desse arquivo.</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-12-1"><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a>suppressPackageStartupMessages(library(gmailr))    # usa a biblioteca gmailr
+</span><span id="__span-12-2"><a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a>source(&quot;config/R/helper_copy.R&quot;)    # usa as funções auxiliares do arquivo &quot;helper_copy&quot;
+</span><span id="__span-12-3"><a id="__codelineno-12-3" name="__codelineno-12-3" href="#__codelineno-12-3"></a>
+</span><span id="__span-12-4"><a id="__codelineno-12-4" name="__codelineno-12-4" href="#__codelineno-12-4"></a>arg &lt;- commandArgs(trailingOnly = TRUE)    # retorna argumentos de linha de comando (no caso, &quot;copy_exec_rec&quot;)
+</span><span id="__span-12-5"><a id="__codelineno-12-5" name="__codelineno-12-5" href="#__codelineno-12-5"></a>base &lt;- guess_base(arg)    # retorna a palavra depois do primeiro &quot;_&quot; (no caso, &quot;exec&quot;)
+</span><span id="__span-12-6"><a id="__codelineno-12-6" name="__codelineno-12-6" href="#__codelineno-12-6"></a>yml &lt;- yaml::yaml.load_file(&quot;config/config.yaml&quot;)$copy[[base]]    # lê a subchave &quot;exec:&quot; da chave &quot;copy:&quot; no arquivo &quot;congif.yaml&quot;
+</span><span id="__span-12-7"><a id="__codelineno-12-7" name="__codelineno-12-7" href="#__codelineno-12-7"></a>
+</span><span id="__span-12-8"><a id="__codelineno-12-8" name="__codelineno-12-8" href="#__codelineno-12-8"></a>if(yml$dir == &quot;gmail&quot;) {    # se o &quot;dir:&quot; for &quot;gmail&quot;
+</span><span id="__span-12-9"><a id="__codelineno-12-9" name="__codelineno-12-9" href="#__codelineno-12-9"></a>  copy_gmail(yml$files[[arg]])    # usa a função &quot;copy_gmail()&quot; na lista de &quot;files:&quot; (ex.: exec_rec.xlsx)
+</span><span id="__span-12-10"><a id="__codelineno-12-10" name="__codelineno-12-10" href="#__codelineno-12-10"></a>} else if(grepl(&quot;^@dcaf&quot;, yml$dir)) {    # se o &quot;dir:&quot; não for gmail, mas começar com @dcaf
+</span><span id="__span-12-11"><a id="__codelineno-12-11" name="__codelineno-12-11" href="#__codelineno-12-11"></a>  copy_scppo(yml$files[[arg]], yml$dir)    # usa a função copy_scppo()
+</span><span id="__span-12-12"><a id="__codelineno-12-12" name="__codelineno-12-12" href="#__codelineno-12-12"></a>} else {    # se não for gmail nem @dcaf (ou seja, for diretório local)
+</span><span id="__span-12-13"><a id="__codelineno-12-13" name="__codelineno-12-13" href="#__codelineno-12-13"></a>  copy_local(yml$files[[arg]], yml$dir)    # usa a função copy_local
+</span><span id="__span-12-14"><a id="__codelineno-12-14" name="__codelineno-12-14" href="#__codelineno-12-14"></a>}
+</span><span id="__span-12-15"><a id="__codelineno-12-15" name="__codelineno-12-15" href="#__codelineno-12-15"></a>
+</span><span id="__span-12-16"><a id="__codelineno-12-16" name="__codelineno-12-16" href="#__codelineno-12-16"></a>clean_excel(from = yml$files[[arg]], to = make_path(arg))    # limpa filtro e formatação do .xlsx
 </span></code></pre></div>
 <details class="note">
 <summary>guess_base()</summary>
 <p>Essa função seleciona a segunda palavra, considerando uma separação por "_" da variável.</p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-14-1"><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a>guess_base &lt;- function(x) {
-</span><span id="__span-14-2"><a id="__codelineno-14-2" name="__codelineno-14-2" href="#__codelineno-14-2"></a>  tokens &lt;- strsplit(x, &quot;_&quot;)
-</span><span id="__span-14-3"><a id="__codelineno-14-3" name="__codelineno-14-3" href="#__codelineno-14-3"></a>  tokens[[1]][2]
-</span><span id="__span-14-4"><a id="__codelineno-14-4" name="__codelineno-14-4" href="#__codelineno-14-4"></a>}
+<div class="language-text highlight"><pre><span></span><code><span id="__span-13-1"><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a>guess_base &lt;- function(x) {
+</span><span id="__span-13-2"><a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a>  tokens &lt;- strsplit(x, &quot;_&quot;)
+</span><span id="__span-13-3"><a id="__codelineno-13-3" name="__codelineno-13-3" href="#__codelineno-13-3"></a>  tokens[[1]][2]
+</span><span id="__span-13-4"><a id="__codelineno-13-4" name="__codelineno-13-4" href="#__codelineno-13-4"></a>}
 </span></code></pre></div>
 </details>
-</li>
-<li>
-<p><code>yml</code>: lê o arquivo "config.yaml" e acessa a subchave "base" (ex.: "copy:" &gt; "exec:")</p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-15-1"><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a>yml &lt;- yaml::yaml.load_file(&quot;config/config.yaml&quot;)$copy[[base]]
-</span></code></pre></div>
-</li>
-<li>
-<p><code>if</code>: aplica uma função, dependendo do diretório. Como no caso do copy_exec, o diretório é o gmail, vamos analisar apenas a função <code>copy_gmail(file)</code> (ex.: file = exec_rec.xlsx).</p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-16-1"><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a>if(yml$dir == &quot;gmail&quot;) {    # ex.: se o &quot;dir:&quot; do &quot;copy &gt; exec&quot; for gmail,
-</span><span id="__span-16-2"><a id="__codelineno-16-2" name="__codelineno-16-2" href="#__codelineno-16-2"></a>  copy_gmail(yml$files[[arg]])    # usa a função &quot;copy_gmail()&quot; na lista (ex.: copy &gt; exec &gt; files &gt; copy_exec_rec, retornando: exec_rec.xlsx)
-</span><span id="__span-16-3"><a id="__codelineno-16-3" name="__codelineno-16-3" href="#__codelineno-16-3"></a>} else if(grepl(&quot;^@dcaf&quot;, yml$dir)) {    # se o &quot;dir:&quot; não for gmail, mas começar com @dcaf
-</span><span id="__span-16-4"><a id="__codelineno-16-4" name="__codelineno-16-4" href="#__codelineno-16-4"></a>  copy_scppo(yml$files[[arg]], yml$dir)    # usa a função copy_scppo()
-</span><span id="__span-16-5"><a id="__codelineno-16-5" name="__codelineno-16-5" href="#__codelineno-16-5"></a>} else {    # se não for gmail nem @dcaf (ou seja, for diretório local)
-</span><span id="__span-16-6"><a id="__codelineno-16-6" name="__codelineno-16-6" href="#__codelineno-16-6"></a>  copy_local(yml$files[[arg]], yml$dir)    # usa a função copy_local
-</span><span id="__span-16-7"><a id="__codelineno-16-7" name="__codelineno-16-7" href="#__codelineno-16-7"></a>}
-</span></code></pre></div>
-<ul>
-<li>
-<p><code>copy_email()</code>: essa função busca, na caixa de entrada, o nome do "file" no assunto (ex.: "exec_rec.xlsx") e se "has:attachment".</p>
-<p>O e-mail com a data mais recente (a data que consta no assunto, exemplo "2026-03-03" dentro de "dados-aramazem-siafi-exec_rec-2026-03-03") é selecionado.</p>
-<p>O anexo deste e-mail é salvo na pasta "data-raw".</p>
 <details class="note">
 <summary>copy_email()</summary>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-17-1"><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a>copy_gmail &lt;- function(file) {
-</span><span id="__span-17-2"><a id="__codelineno-17-2" name="__codelineno-17-2" href="#__codelineno-17-2"></a>  # if(file.exists(&#39;config/credentials.json&#39;))
-</span><span id="__span-17-3"><a id="__codelineno-17-3" name="__codelineno-17-3" href="#__codelineno-17-3"></a>  # cat(&#39;Arquivo encontrado&#39;)
-</span><span id="__span-17-4"><a id="__codelineno-17-4" name="__codelineno-17-4" href="#__codelineno-17-4"></a>  gm_auth_configure(path = &quot;E:/QlikView/Siconv/json.json&quot;)
-</span><span id="__span-17-5"><a id="__codelineno-17-5" name="__codelineno-17-5" href="#__codelineno-17-5"></a>  gm_auth(email=&#39;dcgce.seplag@gmail.com&#39;)
-</span><span id="__span-17-6"><a id="__codelineno-17-6" name="__codelineno-17-6" href="#__codelineno-17-6"></a>  filename &lt;- paste0(&quot;filename:&quot;, file)
-</span><span id="__span-17-7"><a id="__codelineno-17-7" name="__codelineno-17-7" href="#__codelineno-17-7"></a>  has_attachment &lt;- &quot;has:attachment&quot;
-</span><span id="__span-17-8"><a id="__codelineno-17-8" name="__codelineno-17-8" href="#__codelineno-17-8"></a>  query &lt;- paste(filename, has_attachment)
-</span><span id="__span-17-9"><a id="__codelineno-17-9" name="__codelineno-17-9" href="#__codelineno-17-9"></a>
-</span><span id="__span-17-10"><a id="__codelineno-17-10" name="__codelineno-17-10" href="#__codelineno-17-10"></a>  msgs_id &lt;- gm_id(gm_messages(search = query))
-</span><span id="__span-17-11"><a id="__codelineno-17-11" name="__codelineno-17-11" href="#__codelineno-17-11"></a>
-</span><span id="__span-17-12"><a id="__codelineno-17-12" name="__codelineno-17-12" href="#__codelineno-17-12"></a>  if(length(msgs_id) == 0) {
-</span><span id="__span-17-13"><a id="__codelineno-17-13" name="__codelineno-17-13" href="#__codelineno-17-13"></a>    stop(paste0(&quot;Base &quot;, file,&quot; nao encontrada no gmail.&quot;), call. = FALSE)
-</span><span id="__span-17-14"><a id="__codelineno-17-14" name="__codelineno-17-14" href="#__codelineno-17-14"></a>  }
-</span><span id="__span-17-15"><a id="__codelineno-17-15" name="__codelineno-17-15" href="#__codelineno-17-15"></a>  cat(paste0(&quot;Baixando &quot;, file, &quot;...\n&quot;))
-</span><span id="__span-17-16"><a id="__codelineno-17-16" name="__codelineno-17-16" href="#__codelineno-17-16"></a>  msgs_date &lt;- lapply(msgs_id, function(id) {
-</span><span id="__span-17-17"><a id="__codelineno-17-17" name="__codelineno-17-17" href="#__codelineno-17-17"></a>              gm_subject(gm_message(id, format = &quot;metadata&quot;))
-</span><span id="__span-17-18"><a id="__codelineno-17-18" name="__codelineno-17-18" href="#__codelineno-17-18"></a>              })
-</span><span id="__span-17-19"><a id="__codelineno-17-19" name="__codelineno-17-19" href="#__codelineno-17-19"></a>
-</span><span id="__span-17-20"><a id="__codelineno-17-20" name="__codelineno-17-20" href="#__codelineno-17-20"></a>  names(msgs_date) &lt;- msgs_id
-</span><span id="__span-17-21"><a id="__codelineno-17-21" name="__codelineno-17-21" href="#__codelineno-17-21"></a>
-</span><span id="__span-17-22"><a id="__codelineno-17-22" name="__codelineno-17-22" href="#__codelineno-17-22"></a>  msg_id &lt;- sort(unlist(msgs_date), decreasing = TRUE)[1]
-</span><span id="__span-17-23"><a id="__codelineno-17-23" name="__codelineno-17-23" href="#__codelineno-17-23"></a>
-</span><span id="__span-17-24"><a id="__codelineno-17-24" name="__codelineno-17-24" href="#__codelineno-17-24"></a>  msg_date = gsub(&quot;.+_(\\d{4})-(\\d{2})-(\\d{2})-.+&quot;, &quot;\\1-\\2-\\3&quot;, as.character(msg_id))
-</span><span id="__span-17-25"><a id="__codelineno-17-25" name="__codelineno-17-25" href="#__codelineno-17-25"></a>
-</span><span id="__span-17-26"><a id="__codelineno-17-26" name="__codelineno-17-26" href="#__codelineno-17-26"></a>  if(msg_date != Sys.Date()){
-</span><span id="__span-17-27"><a id="__codelineno-17-27" name="__codelineno-17-27" href="#__codelineno-17-27"></a>    warning(paste0(&quot;Base &quot;, file, &quot; atualizada em &quot;, msg_date,
-</span><span id="__span-17-28"><a id="__codelineno-17-28" name="__codelineno-17-28" href="#__codelineno-17-28"></a>                &quot;. Base desatualizada para &quot;, Sys.Date()), call. = FALSE)
-</span><span id="__span-17-29"><a id="__codelineno-17-29" name="__codelineno-17-29" href="#__codelineno-17-29"></a>  }
-</span><span id="__span-17-30"><a id="__codelineno-17-30" name="__codelineno-17-30" href="#__codelineno-17-30"></a>
-</span><span id="__span-17-31"><a id="__codelineno-17-31" name="__codelineno-17-31" href="#__codelineno-17-31"></a>  msg &lt;- gm_message(names(msg_id), format = &quot;full&quot;)
-</span><span id="__span-17-32"><a id="__codelineno-17-32" name="__codelineno-17-32" href="#__codelineno-17-32"></a>
-</span><span id="__span-17-33"><a id="__codelineno-17-33" name="__codelineno-17-33" href="#__codelineno-17-33"></a>  gm_save_attachments(msg, path = &quot;data-raw&quot;)
-</span><span id="__span-17-34"><a id="__codelineno-17-34" name="__codelineno-17-34" href="#__codelineno-17-34"></a>
-</span><span id="__span-17-35"><a id="__codelineno-17-35" name="__codelineno-17-35" href="#__codelineno-17-35"></a>}
-</span></code></pre></div>
-<ul>
-<li><code>gm_auth_configure()</code>: o arquivo está na pasta do computador. Deve estar seguindo as orientações de <a href="https://gmailr.r-lib.org/dev/articles/oauth-client.html">configuração de um cliente OAuth</a>.</li>
-</ul>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-18-1"><a id="__codelineno-18-1" name="__codelineno-18-1" href="#__codelineno-18-1"></a>gm_auth_configure(path = &quot;E:/QlikView/Siconv/json.json&quot;)
-</span></code></pre></div>
-<ul>
-<li>gm_auth(): autoriza o "gmailr" a visualizar e gerenciar os projetos do Gmail, declarando qual identidade do Google usar</li>
-</ul>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-19-1"><a id="__codelineno-19-1" name="__codelineno-19-1" href="#__codelineno-19-1"></a>gm_auth(email=&#39;dcgce.seplag@gmail.com&#39;)
-</span></code></pre></div>
-<ul>
-<li><code>msgs_id</code>: pega o ID de uma lista de mensagens, filtradas pelo nome do arquivo (ex.: "exec_rec.xlsx") e se "has:attachment" (ou seja, se tem anexo)</li>
-</ul>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-20-1"><a id="__codelineno-20-1" name="__codelineno-20-1" href="#__codelineno-20-1"></a>msgs_id &lt;- gm_id(gm_messages(search = paste(paste0(&quot;filename:&quot;, file), &quot;has:attachment&quot;)))
-</span></code></pre></div>
-<ul>
-<li><code>if</code>: retorna mensagem de erro, caso não haja "msgs_id" (ex.: "Base exec_rec.xlsx nao encontrada no gmail.")</li>
-</ul>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-21-1"><a id="__codelineno-21-1" name="__codelineno-21-1" href="#__codelineno-21-1"></a>if(length(msgs_id) == 0) {    # se não houver email com o arquivo
-</span><span id="__span-21-2"><a id="__codelineno-21-2" name="__codelineno-21-2" href="#__codelineno-21-2"></a>  stop(paste0(&quot;Base &quot;, file,&quot; nao encontrada no gmail.&quot;), call. = FALSE)    # retorna mensagem de erro
-</span><span id="__span-21-3"><a id="__codelineno-21-3" name="__codelineno-21-3" href="#__codelineno-21-3"></a>}
-</span><span id="__span-21-4"><a id="__codelineno-21-4" name="__codelineno-21-4" href="#__codelineno-21-4"></a>
-</span><span id="__span-21-5"><a id="__codelineno-21-5" name="__codelineno-21-5" href="#__codelineno-21-5"></a>cat(paste0(&quot;Baixando &quot;, file, &quot;...\n&quot;))    # retorna mensagem (ex.: &quot;Baixando exec_rec.xlsx...&quot;)
-</span></code></pre></div>
-<ul>
-<li><code>msgs_date</code>: extrai a data do assunto do e-mail. Por exemplo, no e-mail "dados-armazem-siafi-exec_alem_credito-2026-02-27", seria extraído "2026-02-27".</li>
-</ul>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-22-1"><a id="__codelineno-22-1" name="__codelineno-22-1" href="#__codelineno-22-1"></a>msgs_date &lt;- lapply(msgs_id, function(id) {    # retorna uma lista com o assunto da mensagem
-</span><span id="__span-22-2"><a id="__codelineno-22-2" name="__codelineno-22-2" href="#__codelineno-22-2"></a>            gm_subject(gm_message(id, format = &quot;metadata&quot;))    # busca os metadados da mensagem e extrai o assunto
-</span><span id="__span-22-3"><a id="__codelineno-22-3" name="__codelineno-22-3" href="#__codelineno-22-3"></a>            })
-</span><span id="__span-22-4"><a id="__codelineno-22-4" name="__codelineno-22-4" href="#__codelineno-22-4"></a>
-</span><span id="__span-22-5"><a id="__codelineno-22-5" name="__codelineno-22-5" href="#__codelineno-22-5"></a># atribui o respectivo nome (IDs) aos elementos da lista (assuntos), permitindo acessar o assunto por ID
-</span><span id="__span-22-6"><a id="__codelineno-22-6" name="__codelineno-22-6" href="#__codelineno-22-6"></a>names(msgs_date) &lt;- msgs_id
-</span><span id="__span-22-7"><a id="__codelineno-22-7" name="__codelineno-22-7" href="#__codelineno-22-7"></a>
-</span><span id="__span-22-8"><a id="__codelineno-22-8" name="__codelineno-22-8" href="#__codelineno-22-8"></a># transforma a lista em caracteres, ordena em ordem decrescente (o assunto) e seleciona o 1° elemento.
-</span><span id="__span-22-9"><a id="__codelineno-22-9" name="__codelineno-22-9" href="#__codelineno-22-9"></a># Por exemplo, um assunto de e-mail seria: &quot;dados-armazem-siafi-exec_alem_credito-2026-02-27&quot;
-</span><span id="__span-22-10"><a id="__codelineno-22-10" name="__codelineno-22-10" href="#__codelineno-22-10"></a>msg_id &lt;- sort(unlist(msgs_date), decreasing = TRUE)[1]
-</span><span id="__span-22-11"><a id="__codelineno-22-11" name="__codelineno-22-11" href="#__codelineno-22-11"></a>
-</span><span id="__span-22-12"><a id="__codelineno-22-12" name="__codelineno-22-12" href="#__codelineno-22-12"></a># extrai uma data no formato YYYY-MM-DD do assunto (ex.: &quot;2026-02-27&quot;)
-</span><span id="__span-22-13"><a id="__codelineno-22-13" name="__codelineno-22-13" href="#__codelineno-22-13"></a>msg_date = gsub(&quot;.+_(\\d{4})-(\\d{2})-(\\d{2})-.+&quot;, &quot;\\1-\\2-\\3&quot;, as.character(msg_id))
-</span></code></pre></div>
-<ul>
-<li><code>if</code>: verifica se a base foi atualizada hoje e, se não estiver, emite um aviso (ex.: "Base exec_rec.xlsx atualizada em 2026-02-27. Base desatualizada para 2026-03-03")</li>
-</ul>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-23-1"><a id="__codelineno-23-1" name="__codelineno-23-1" href="#__codelineno-23-1"></a>if(msg_date != Sys.Date()){
-</span><span id="__span-23-2"><a id="__codelineno-23-2" name="__codelineno-23-2" href="#__codelineno-23-2"></a>  warning(paste0(&quot;Base &quot;, file, &quot; atualizada em &quot;, msg_date,
-</span><span id="__span-23-3"><a id="__codelineno-23-3" name="__codelineno-23-3" href="#__codelineno-23-3"></a>              &quot;. Base desatualizada para &quot;, Sys.Date()), call. = FALSE)
-</span><span id="__span-23-4"><a id="__codelineno-23-4" name="__codelineno-23-4" href="#__codelineno-23-4"></a>}
-</span></code></pre></div>
-<ul>
-<li><code>gm_save_attachments()</code>: salva o anexo do e-mail selecionado em "data-raw"</li>
-</ul>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-24-1"><a id="__codelineno-24-1" name="__codelineno-24-1" href="#__codelineno-24-1"></a># extrai a mensagem completa do e-mail com ID selecionado
-</span><span id="__span-24-2"><a id="__codelineno-24-2" name="__codelineno-24-2" href="#__codelineno-24-2"></a>msg &lt;- gm_message(names(msg_id), format = &quot;full&quot;)
-</span><span id="__span-24-3"><a id="__codelineno-24-3" name="__codelineno-24-3" href="#__codelineno-24-3"></a>
-</span><span id="__span-24-4"><a id="__codelineno-24-4" name="__codelineno-24-4" href="#__codelineno-24-4"></a># salva todos os anexos da mensagem no diretório &quot;data-raw&quot;
-</span><span id="__span-24-5"><a id="__codelineno-24-5" name="__codelineno-24-5" href="#__codelineno-24-5"></a>gm_save_attachments(msg, path = &quot;data-raw&quot;)
+<p>Essa função busca, na caixa de entrada, o nome do "file" no assunto (ex.: "exec_rec.xlsx") e se "has:attachment".</p>
+<p>O e-mail com a data mais recente (a data que consta no assunto, exemplo "2026-03-03" dentro de "dados-aramazem-siafi-exec_rec-2026-03-03") é selecionado.</p>
+<p>O anexo deste e-mail é salvo na pasta "data-raw".</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-14-1"><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a>copy_gmail &lt;- function(file) {
+</span><span id="__span-14-2"><a id="__codelineno-14-2" name="__codelineno-14-2" href="#__codelineno-14-2"></a>
+</span><span id="__span-14-3"><a id="__codelineno-14-3" name="__codelineno-14-3" href="#__codelineno-14-3"></a>  # o arquivo está na pasta do computador. Deve estar seguindo orientações como de: gmailr.r-lib.org/dev/articles/oauth-client.html
+</span><span id="__span-14-4"><a id="__codelineno-14-4" name="__codelineno-14-4" href="#__codelineno-14-4"></a>  gm_auth_configure(path = &quot;E:/QlikView/Siconv/json.json&quot;)
+</span><span id="__span-14-5"><a id="__codelineno-14-5" name="__codelineno-14-5" href="#__codelineno-14-5"></a>
+</span><span id="__span-14-6"><a id="__codelineno-14-6" name="__codelineno-14-6" href="#__codelineno-14-6"></a>  # autoriza o &quot;gmailr&quot; a visualizar e gerenciar os projetos do Gmail, declarando qual identidade do Google usar
+</span><span id="__span-14-7"><a id="__codelineno-14-7" name="__codelineno-14-7" href="#__codelineno-14-7"></a>  gm_auth(email=&#39;dcgce.seplag@gmail.com&#39;)
+</span><span id="__span-14-8"><a id="__codelineno-14-8" name="__codelineno-14-8" href="#__codelineno-14-8"></a>
+</span><span id="__span-14-9"><a id="__codelineno-14-9" name="__codelineno-14-9" href="#__codelineno-14-9"></a>  filename &lt;- paste0(&quot;filename:&quot;, file)    # concatena &quot;filename: exec_rec.xlsx&quot;
+</span><span id="__span-14-10"><a id="__codelineno-14-10" name="__codelineno-14-10" href="#__codelineno-14-10"></a>  has_attachment &lt;- &quot;has:attachment&quot;
+</span><span id="__span-14-11"><a id="__codelineno-14-11" name="__codelineno-14-11" href="#__codelineno-14-11"></a>  query &lt;- paste(filename, has_attachment)    # concatena &quot;filename: exec_rec.xlsx&quot;
+</span><span id="__span-14-12"><a id="__codelineno-14-12" name="__codelineno-14-12" href="#__codelineno-14-12"></a>
+</span><span id="__span-14-13"><a id="__codelineno-14-13" name="__codelineno-14-13" href="#__codelineno-14-13"></a>  # pega o ID de uma lista de mensagens, filtradas pelo nome do arquivo (ex.: &quot;exec_rec.xlsx&quot;) e se &quot;has:attachment&quot; (se tem anexo)
+</span><span id="__span-14-14"><a id="__codelineno-14-14" name="__codelineno-14-14" href="#__codelineno-14-14"></a>  msgs_id &lt;- gm_id(gm_messages(search = query))
+</span><span id="__span-14-15"><a id="__codelineno-14-15" name="__codelineno-14-15" href="#__codelineno-14-15"></a>
+</span><span id="__span-14-16"><a id="__codelineno-14-16" name="__codelineno-14-16" href="#__codelineno-14-16"></a>  if(length(msgs_id) == 0) {    # se o &quot;msgs_id&quot; estiver zerado
+</span><span id="__span-14-17"><a id="__codelineno-14-17" name="__codelineno-14-17" href="#__codelineno-14-17"></a>
+</span><span id="__span-14-18"><a id="__codelineno-14-18" name="__codelineno-14-18" href="#__codelineno-14-18"></a>    # retorna mensagem falando que não encontrou nenhum e-mail
+</span><span id="__span-14-19"><a id="__codelineno-14-19" name="__codelineno-14-19" href="#__codelineno-14-19"></a>    stop(paste0(&quot;Base &quot;, file,&quot; nao encontrada no gmail.&quot;), call. = FALSE)
+</span><span id="__span-14-20"><a id="__codelineno-14-20" name="__codelineno-14-20" href="#__codelineno-14-20"></a>  }
+</span><span id="__span-14-21"><a id="__codelineno-14-21" name="__codelineno-14-21" href="#__codelineno-14-21"></a>
+</span><span id="__span-14-22"><a id="__codelineno-14-22" name="__codelineno-14-22" href="#__codelineno-14-22"></a>  # avisa que está baixando o arquivo (do email)
+</span><span id="__span-14-23"><a id="__codelineno-14-23" name="__codelineno-14-23" href="#__codelineno-14-23"></a>  cat(paste0(&quot;Baixando &quot;, file, &quot;...\n&quot;))
+</span><span id="__span-14-24"><a id="__codelineno-14-24" name="__codelineno-14-24" href="#__codelineno-14-24"></a>
+</span><span id="__span-14-25"><a id="__codelineno-14-25" name="__codelineno-14-25" href="#__codelineno-14-25"></a>  # retorna uma lista com o assunto da mensagem
+</span><span id="__span-14-26"><a id="__codelineno-14-26" name="__codelineno-14-26" href="#__codelineno-14-26"></a>  msgs_date &lt;- lapply(msgs_id, function(id) {
+</span><span id="__span-14-27"><a id="__codelineno-14-27" name="__codelineno-14-27" href="#__codelineno-14-27"></a>
+</span><span id="__span-14-28"><a id="__codelineno-14-28" name="__codelineno-14-28" href="#__codelineno-14-28"></a>              # busca os metadados da mensagem e extrai o assunto
+</span><span id="__span-14-29"><a id="__codelineno-14-29" name="__codelineno-14-29" href="#__codelineno-14-29"></a>              gm_subject(gm_message(id, format = &quot;metadata&quot;))
+</span><span id="__span-14-30"><a id="__codelineno-14-30" name="__codelineno-14-30" href="#__codelineno-14-30"></a>
+</span><span id="__span-14-31"><a id="__codelineno-14-31" name="__codelineno-14-31" href="#__codelineno-14-31"></a>              })
+</span><span id="__span-14-32"><a id="__codelineno-14-32" name="__codelineno-14-32" href="#__codelineno-14-32"></a>
+</span><span id="__span-14-33"><a id="__codelineno-14-33" name="__codelineno-14-33" href="#__codelineno-14-33"></a>  # atribui o respectivo nome (IDs) aos elementos da lista (assuntos), permitindo acessar o assunto por ID
+</span><span id="__span-14-34"><a id="__codelineno-14-34" name="__codelineno-14-34" href="#__codelineno-14-34"></a>  names(msgs_date) &lt;- msgs_id
+</span><span id="__span-14-35"><a id="__codelineno-14-35" name="__codelineno-14-35" href="#__codelineno-14-35"></a>
+</span><span id="__span-14-36"><a id="__codelineno-14-36" name="__codelineno-14-36" href="#__codelineno-14-36"></a>  # transforma a lista em caracteres, ordena em ordem decrescente (o assunto) e seleciona o 1° elemento.
+</span><span id="__span-14-37"><a id="__codelineno-14-37" name="__codelineno-14-37" href="#__codelineno-14-37"></a>  # Por exemplo, um assunto de e-mail seria: &quot;dados-armazem-siafi-exec_alem_credito-2026-02-27&quot;
+</span><span id="__span-14-38"><a id="__codelineno-14-38" name="__codelineno-14-38" href="#__codelineno-14-38"></a>  msg_id &lt;- sort(unlist(msgs_date), decreasing = TRUE)[1]
+</span><span id="__span-14-39"><a id="__codelineno-14-39" name="__codelineno-14-39" href="#__codelineno-14-39"></a>
+</span><span id="__span-14-40"><a id="__codelineno-14-40" name="__codelineno-14-40" href="#__codelineno-14-40"></a>  # extrai uma data no formato YYYY-MM-DD do assunto (ex.: &quot;2026-02-27&quot;)
+</span><span id="__span-14-41"><a id="__codelineno-14-41" name="__codelineno-14-41" href="#__codelineno-14-41"></a>  msg_date = gsub(&quot;.+_(\\d{4})-(\\d{2})-(\\d{2})-.+&quot;, &quot;\\1-\\2-\\3&quot;, as.character(msg_id))
+</span><span id="__span-14-42"><a id="__codelineno-14-42" name="__codelineno-14-42" href="#__codelineno-14-42"></a>
+</span><span id="__span-14-43"><a id="__codelineno-14-43" name="__codelineno-14-43" href="#__codelineno-14-43"></a>  # verifica se a base foi atualizada hoje e, se não estiver, emite um aviso
+</span><span id="__span-14-44"><a id="__codelineno-14-44" name="__codelineno-14-44" href="#__codelineno-14-44"></a>  # Por exemplo, &quot;Base exec_rec.xlsx atualizada em 2026-02-27. Base desatualizada para 2026-03-03&quot;
+</span><span id="__span-14-45"><a id="__codelineno-14-45" name="__codelineno-14-45" href="#__codelineno-14-45"></a>  if(msg_date != Sys.Date()){
+</span><span id="__span-14-46"><a id="__codelineno-14-46" name="__codelineno-14-46" href="#__codelineno-14-46"></a>    warning(paste0(&quot;Base &quot;, file, &quot; atualizada em &quot;, msg_date,
+</span><span id="__span-14-47"><a id="__codelineno-14-47" name="__codelineno-14-47" href="#__codelineno-14-47"></a>                &quot;. Base desatualizada para &quot;, Sys.Date()), call. = FALSE)
+</span><span id="__span-14-48"><a id="__codelineno-14-48" name="__codelineno-14-48" href="#__codelineno-14-48"></a>  }
+</span><span id="__span-14-49"><a id="__codelineno-14-49" name="__codelineno-14-49" href="#__codelineno-14-49"></a>
+</span><span id="__span-14-50"><a id="__codelineno-14-50" name="__codelineno-14-50" href="#__codelineno-14-50"></a>  # extrai a mensagem completa do e-mail com ID selecionado
+</span><span id="__span-14-51"><a id="__codelineno-14-51" name="__codelineno-14-51" href="#__codelineno-14-51"></a>  msg &lt;- gm_message(names(msg_id), format = &quot;full&quot;)
+</span><span id="__span-14-52"><a id="__codelineno-14-52" name="__codelineno-14-52" href="#__codelineno-14-52"></a>
+</span><span id="__span-14-53"><a id="__codelineno-14-53" name="__codelineno-14-53" href="#__codelineno-14-53"></a>  # salva todos os anexos do e-mail selecionado no diretório &quot;data-raw&quot;
+</span><span id="__span-14-54"><a id="__codelineno-14-54" name="__codelineno-14-54" href="#__codelineno-14-54"></a>  gm_save_attachments(msg, path = &quot;data-raw&quot;)
+</span><span id="__span-14-55"><a id="__codelineno-14-55" name="__codelineno-14-55" href="#__codelineno-14-55"></a>
+</span><span id="__span-14-56"><a id="__codelineno-14-56" name="__codelineno-14-56" href="#__codelineno-14-56"></a>}
 </span></code></pre></div>
 </details>
-</li>
-</ul>
-</li>
-<li>
-<p><code>clean_excel</code>: executa o VBScript "clean_excel.vbs" no arquivo (ex.: exec_rec.xlsx), salvando-o, com o mesmo nome e no mesmo local, um arquivo sem filtro e sem formatação.</p>
-<p>Se o arquivo original e o arquivo de saída tiverem nomes diferentes, o arquivo original é exluído.</p>
 <details class="note">
 <summary>clean_excel()</summary>
-<p>Originalmente, o <code>clean_excel</code> está como:</p>
-<p>No arquivo "copy.R":</p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-25-1"><a id="__codelineno-25-1" name="__codelineno-25-1" href="#__codelineno-25-1"></a>clean_excel(from = yml$files[[arg]], to = make_path(arg))
-</span></code></pre></div>
-<p>No arquivo "helper_copy.R":</p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-26-1"><a id="__codelineno-26-1" name="__codelineno-26-1" href="#__codelineno-26-1"></a>clean_excel &lt;- function(from, to) {
-</span><span id="__span-26-2"><a id="__codelineno-26-2" name="__codelineno-26-2" href="#__codelineno-26-2"></a>  vbscript &lt;- paste(&quot;cscript //nologo code/vbs/clean_excel.vbs&quot;, from, to)
-</span><span id="__span-26-3"><a id="__codelineno-26-3" name="__codelineno-26-3" href="#__codelineno-26-3"></a>
-</span><span id="__span-26-4"><a id="__codelineno-26-4" name="__codelineno-26-4" href="#__codelineno-26-4"></a>  shell(vbscript, mustWork = TRUE)
-</span><span id="__span-26-5"><a id="__codelineno-26-5" name="__codelineno-26-5" href="#__codelineno-26-5"></a>
-</span><span id="__span-26-6"><a id="__codelineno-26-6" name="__codelineno-26-6" href="#__codelineno-26-6"></a>  if(from != to) {
-</span><span id="__span-26-7"><a id="__codelineno-26-7" name="__codelineno-26-7" href="#__codelineno-26-7"></a>    invisible(file.remove(file.path(&quot;data-raw/&quot;, from)))
-</span><span id="__span-26-8"><a id="__codelineno-26-8" name="__codelineno-26-8" href="#__codelineno-26-8"></a>  }
-</span><span id="__span-26-9"><a id="__codelineno-26-9" name="__codelineno-26-9" href="#__codelineno-26-9"></a>}
+<p>Executa o VBScript "clean_excel.vbs" no "file" (ex.: exec_rec.xlsx), salvando-o, com o mesmo nome e no mesmo local, um arquivo sem filtro e sem formatação.</p>
+<p>Se o arquivo original e o arquivo de saída tiverem nomes diferentes, o arquivo original é excluído.</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-15-1"><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a>clean_excel &lt;- function(from, to) {
+</span><span id="__span-15-2"><a id="__codelineno-15-2" name="__codelineno-15-2" href="#__codelineno-15-2"></a>  vbscript &lt;- paste(&quot;cscript //nologo code/vbs/clean_excel.vbs&quot;, from, to)
+</span><span id="__span-15-3"><a id="__codelineno-15-3" name="__codelineno-15-3" href="#__codelineno-15-3"></a>
+</span><span id="__span-15-4"><a id="__codelineno-15-4" name="__codelineno-15-4" href="#__codelineno-15-4"></a>  shell(vbscript, mustWork = TRUE)    # executa o comando no terminal do Windows
+</span><span id="__span-15-5"><a id="__codelineno-15-5" name="__codelineno-15-5" href="#__codelineno-15-5"></a>
+</span><span id="__span-15-6"><a id="__codelineno-15-6" name="__codelineno-15-6" href="#__codelineno-15-6"></a>  if(from != to) {    # exclui o arquivo original se o nome de entrada for diferente do nome de saída
+</span><span id="__span-15-7"><a id="__codelineno-15-7" name="__codelineno-15-7" href="#__codelineno-15-7"></a>    invisible(file.remove(file.path(&quot;data-raw/&quot;, from)))
+</span><span id="__span-15-8"><a id="__codelineno-15-8" name="__codelineno-15-8" href="#__codelineno-15-8"></a>  }
+</span><span id="__span-15-9"><a id="__codelineno-15-9" name="__codelineno-15-9" href="#__codelineno-15-9"></a>}
 </span></code></pre></div>
 <details class="note">
 <summary>make_path()</summary>
-<p>O <code>make_path()</code>, no arquivo "helper_copy.R", retorna o nome do arquivo .xlsx correspondente (ex.: exec_rec.xlsx).</p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-27-1"><a id="__codelineno-27-1" name="__codelineno-27-1" href="#__codelineno-27-1"></a>make_path &lt;- function(x) {    # x seria &quot;arg&quot;, (ex.: arg = copy_exec_rec)
-</span><span id="__span-27-2"><a id="__codelineno-27-2" name="__codelineno-27-2" href="#__codelineno-27-2"></a>  tokens &lt;- strsplit(x, &quot;_&quot;)    # retorna uma lista da separação de &quot;arg&quot; por &quot;_&quot; (ex.: c(copy, exec, rec))
-</span><span id="__span-27-3"><a id="__codelineno-27-3" name="__codelineno-27-3" href="#__codelineno-27-3"></a>  base &lt;- tokens[[1]][2]    # retorna o segundo &quot;token&quot; (ex.: exec)
-</span><span id="__span-27-4"><a id="__codelineno-27-4" name="__codelineno-27-4" href="#__codelineno-27-4"></a>  stem &lt;- paste0(tokens[[1]][-c(1, 2)], collapse = &quot;_&quot;)    # seleciona todos os tokens depois do segundo (ex.: rec)
-</span><span id="__span-27-5"><a id="__codelineno-27-5" name="__codelineno-27-5" href="#__codelineno-27-5"></a>  paste0(base, &quot;_&quot;, stem, &quot;.xlsx&quot;)    # cria o caminho &quot;base_stem.xlsx&quot; (ex.: exec_rec.xlsx)
-</span><span id="__span-27-6"><a id="__codelineno-27-6" name="__codelineno-27-6" href="#__codelineno-27-6"></a>}
+<p>O "make_path()", no arquivo "helper_copy.R", retorna o nome do arquivo .xlsx correspondente (ex.: "exec_rec.xlsx").</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-16-1"><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a>make_path &lt;- function(x) {    # x seria &quot;arg&quot; (ex.: arg = copy_exec_rec)
+</span><span id="__span-16-2"><a id="__codelineno-16-2" name="__codelineno-16-2" href="#__codelineno-16-2"></a>  tokens &lt;- strsplit(x, &quot;_&quot;)    # retorna uma lista da separação de &quot;arg&quot; por &quot;_&quot; (ex.: c(copy, exec, rec))
+</span><span id="__span-16-3"><a id="__codelineno-16-3" name="__codelineno-16-3" href="#__codelineno-16-3"></a>  base &lt;- tokens[[1]][2]    # retorna o segundo &quot;token&quot; (ex.: exec)
+</span><span id="__span-16-4"><a id="__codelineno-16-4" name="__codelineno-16-4" href="#__codelineno-16-4"></a>  stem &lt;- paste0(tokens[[1]][-c(1, 2)], collapse = &quot;_&quot;)    # seleciona todos os tokens depois do segundo (ex.: rec)
+</span><span id="__span-16-5"><a id="__codelineno-16-5" name="__codelineno-16-5" href="#__codelineno-16-5"></a>  paste0(base, &quot;_&quot;, stem, &quot;.xlsx&quot;)    # cria o caminho &quot;base_stem.xlsx&quot; (ex.: &quot;exec_rec.xlsx&quot;)
+</span><span id="__span-16-6"><a id="__codelineno-16-6" name="__codelineno-16-6" href="#__codelineno-16-6"></a>}
 </span></code></pre></div>
 </details>
-<ul>
-<li>
-<p><code>vbscript</code>: é uma linha de texto com um comando que chama o Windows Script Host para executar o VBScript "clean_excel.vbs".</p>
-<p>Este script abre o excel, limpa filtros e formatação e salva no mesmo local e com o mesmo nome que o arquivo de origem.</p>
 <details class="note">
 <summary>clean_excel.vbs</summary>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-28-1"><a id="__codelineno-28-1" name="__codelineno-28-1" href="#__codelineno-28-1"></a>&#39; ------------------------------------------
-</span><span id="__span-28-2"><a id="__codelineno-28-2" name="__codelineno-28-2" href="#__codelineno-28-2"></a>&#39; Inicializacao de variaveis de sistema
-</span><span id="__span-28-3"><a id="__codelineno-28-3" name="__codelineno-28-3" href="#__codelineno-28-3"></a>Dim fso, wshShell
-</span><span id="__span-28-4"><a id="__codelineno-28-4" name="__codelineno-28-4" href="#__codelineno-28-4"></a>
-</span><span id="__span-28-5"><a id="__codelineno-28-5" name="__codelineno-28-5" href="#__codelineno-28-5"></a>Set fso = CreateObject(&quot;Scripting.FileSystemObject&quot;)    # manipula arquivos e caminhos
-</span><span id="__span-28-6"><a id="__codelineno-28-6" name="__codelineno-28-6" href="#__codelineno-28-6"></a>Set wshShell = CreateObject(&quot;WScript.Shell&quot;)    # obtém infomrações do ambiente
-</span><span id="__span-28-7"><a id="__codelineno-28-7" name="__codelineno-28-7" href="#__codelineno-28-7"></a>&#39; ------------------------------------------
-</span><span id="__span-28-8"><a id="__codelineno-28-8" name="__codelineno-28-8" href="#__codelineno-28-8"></a>&#39; Inicializacao de variaveis de usuario
-</span><span id="__span-28-9"><a id="__codelineno-28-9" name="__codelineno-28-9" href="#__codelineno-28-9"></a>data_raw = fso.BuildPath(wshShell.CurrentDirectory, &quot;\data-raw\&quot;)    # diretorio_atual\data-raw\
-</span><span id="__span-28-10"><a id="__codelineno-28-10" name="__codelineno-28-10" href="#__codelineno-28-10"></a>old_file = Wscript.Arguments.Item(0)    # primeiro argumento (arquivo de entrada, from)
-</span><span id="__span-28-11"><a id="__codelineno-28-11" name="__codelineno-28-11" href="#__codelineno-28-11"></a>old_path = fso.BuildPath(data_raw, old_file)    # combina data_raw + old_file
-</span><span id="__span-28-12"><a id="__codelineno-28-12" name="__codelineno-28-12" href="#__codelineno-28-12"></a>
-</span><span id="__span-28-13"><a id="__codelineno-28-13" name="__codelineno-28-13" href="#__codelineno-28-13"></a>new_file = Wscript.Arguments.Item(1)    # segundo argumento (arquivo de saída, to)
-</span><span id="__span-28-14"><a id="__codelineno-28-14" name="__codelineno-28-14" href="#__codelineno-28-14"></a>&#39; ------------------------------------------
-</span><span id="__span-28-15"><a id="__codelineno-28-15" name="__codelineno-28-15" href="#__codelineno-28-15"></a>&#39; Inicializacao das variaveis do excel e opera��es
-</span><span id="__span-28-16"><a id="__codelineno-28-16" name="__codelineno-28-16" href="#__codelineno-28-16"></a>Dim excel, workbook
-</span><span id="__span-28-17"><a id="__codelineno-28-17" name="__codelineno-28-17" href="#__codelineno-28-17"></a>
-</span><span id="__span-28-18"><a id="__codelineno-28-18" name="__codelineno-28-18" href="#__codelineno-28-18"></a>WScript.Echo &quot;Limpeza data-raw\&quot; &amp; old_file &amp; &quot;...&quot;    # escreve uma mensagem no console
-</span><span id="__span-28-19"><a id="__codelineno-28-19" name="__codelineno-28-19" href="#__codelineno-28-19"></a>
-</span><span id="__span-28-20"><a id="__codelineno-28-20" name="__codelineno-28-20" href="#__codelineno-28-20"></a>Set excel = CreateObject(&quot;Excel.Application&quot;)    # cria uma instância do Excel
-</span><span id="__span-28-21"><a id="__codelineno-28-21" name="__codelineno-28-21" href="#__codelineno-28-21"></a>excel.Application.DisplayAlerts = False    # desliga alertas
-</span><span id="__span-28-22"><a id="__codelineno-28-22" name="__codelineno-28-22" href="#__codelineno-28-22"></a>
-</span><span id="__span-28-23"><a id="__codelineno-28-23" name="__codelineno-28-23" href="#__codelineno-28-23"></a>Set workbook = excel.Workbooks.Open(fso.GetFile(old_path))    # abre o arquivo
-</span><span id="__span-28-24"><a id="__codelineno-28-24" name="__codelineno-28-24" href="#__codelineno-28-24"></a>
-</span><span id="__span-28-25"><a id="__codelineno-28-25" name="__codelineno-28-25" href="#__codelineno-28-25"></a>On Error Resume Next
-</span><span id="__span-28-26"><a id="__codelineno-28-26" name="__codelineno-28-26" href="#__codelineno-28-26"></a>workbook.Worksheets(&quot;base&quot;).ShowAllData    # tenta limpar filtros ativos
-</span><span id="__span-28-27"><a id="__codelineno-28-27" name="__codelineno-28-27" href="#__codelineno-28-27"></a>On Error GoTo 0    # se não houver filtro, ignora o erro
-</span><span id="__span-28-28"><a id="__codelineno-28-28" name="__codelineno-28-28" href="#__codelineno-28-28"></a>
-</span><span id="__span-28-29"><a id="__codelineno-28-29" name="__codelineno-28-29" href="#__codelineno-28-29"></a>workbook.Worksheets(&quot;base&quot;).Cells.ClearFormats    # remove todas as formatações da planilha &quot;base&quot;
-</span><span id="__span-28-30"><a id="__codelineno-28-30" name="__codelineno-28-30" href="#__codelineno-28-30"></a>workbook.SaveAs data_raw &amp; new_file, 51    # salva o arquivo em data-raw\new_file com o formato 51 &quot;.xlsx sem macros&quot;
-</span><span id="__span-28-31"><a id="__codelineno-28-31" name="__codelineno-28-31" href="#__codelineno-28-31"></a>workbook.Close    # fecha o workbook
-</span><span id="__span-28-32"><a id="__codelineno-28-32" name="__codelineno-28-32" href="#__codelineno-28-32"></a>
-</span><span id="__span-28-33"><a id="__codelineno-28-33" name="__codelineno-28-33" href="#__codelineno-28-33"></a>excel.Application.DisplayAlerts = True    # reativa os alertas
-</span><span id="__span-28-34"><a id="__codelineno-28-34" name="__codelineno-28-34" href="#__codelineno-28-34"></a>excel.Application.Quit    # fecha a aplicação Excel
-</span><span id="__span-28-35"><a id="__codelineno-28-35" name="__codelineno-28-35" href="#__codelineno-28-35"></a>&#39; ------------------------------------------
-</span><span id="__span-28-36"><a id="__codelineno-28-36" name="__codelineno-28-36" href="#__codelineno-28-36"></a>&#39; Finaliza��o
-</span><span id="__span-28-37"><a id="__codelineno-28-37" name="__codelineno-28-37" href="#__codelineno-28-37"></a>Set fso = Nothing    # libera os objetos
-</span><span id="__span-28-38"><a id="__codelineno-28-38" name="__codelineno-28-38" href="#__codelineno-28-38"></a>Set workbook = Nothing
-</span><span id="__span-28-39"><a id="__codelineno-28-39" name="__codelineno-28-39" href="#__codelineno-28-39"></a>Set excel = Nothing
-</span><span id="__span-28-40"><a id="__codelineno-28-40" name="__codelineno-28-40" href="#__codelineno-28-40"></a>Set wshShell = Nothing
-</span><span id="__span-28-41"><a id="__codelineno-28-41" name="__codelineno-28-41" href="#__codelineno-28-41"></a>
-</span><span id="__span-28-42"><a id="__codelineno-28-42" name="__codelineno-28-42" href="#__codelineno-28-42"></a>wScript.Quit    # encerra o script
+<p>O "vbscript" é uma linha de texto com um comando que chama o Windows Script Host para executar o VBScript "clean_excel.vbs".</p>
+<p>Este script abre o excel, limpa filtros e formatação e salva no mesmo local e com o mesmo nome que o arquivo de origem.</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-17-1"><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a>&#39; ------------------------------------------
+</span><span id="__span-17-2"><a id="__codelineno-17-2" name="__codelineno-17-2" href="#__codelineno-17-2"></a>&#39; Inicializacao de variaveis de sistema
+</span><span id="__span-17-3"><a id="__codelineno-17-3" name="__codelineno-17-3" href="#__codelineno-17-3"></a>Dim fso, wshShell
+</span><span id="__span-17-4"><a id="__codelineno-17-4" name="__codelineno-17-4" href="#__codelineno-17-4"></a>
+</span><span id="__span-17-5"><a id="__codelineno-17-5" name="__codelineno-17-5" href="#__codelineno-17-5"></a>Set fso = CreateObject(&quot;Scripting.FileSystemObject&quot;)    # manipula arquivos e caminhos
+</span><span id="__span-17-6"><a id="__codelineno-17-6" name="__codelineno-17-6" href="#__codelineno-17-6"></a>Set wshShell = CreateObject(&quot;WScript.Shell&quot;)    # obtém infomrações do ambiente
+</span><span id="__span-17-7"><a id="__codelineno-17-7" name="__codelineno-17-7" href="#__codelineno-17-7"></a>&#39; ------------------------------------------
+</span><span id="__span-17-8"><a id="__codelineno-17-8" name="__codelineno-17-8" href="#__codelineno-17-8"></a>&#39; Inicializacao de variaveis de usuario
+</span><span id="__span-17-9"><a id="__codelineno-17-9" name="__codelineno-17-9" href="#__codelineno-17-9"></a>data_raw = fso.BuildPath(wshShell.CurrentDirectory, &quot;\data-raw\&quot;)    # diretorio_atual\data-raw\
+</span><span id="__span-17-10"><a id="__codelineno-17-10" name="__codelineno-17-10" href="#__codelineno-17-10"></a>old_file = Wscript.Arguments.Item(0)    # primeiro argumento (arquivo de entrada, from)
+</span><span id="__span-17-11"><a id="__codelineno-17-11" name="__codelineno-17-11" href="#__codelineno-17-11"></a>old_path = fso.BuildPath(data_raw, old_file)    # combina data_raw + old_file
+</span><span id="__span-17-12"><a id="__codelineno-17-12" name="__codelineno-17-12" href="#__codelineno-17-12"></a>
+</span><span id="__span-17-13"><a id="__codelineno-17-13" name="__codelineno-17-13" href="#__codelineno-17-13"></a>new_file = Wscript.Arguments.Item(1)    # segundo argumento (arquivo de saída, to)
+</span><span id="__span-17-14"><a id="__codelineno-17-14" name="__codelineno-17-14" href="#__codelineno-17-14"></a>&#39; ------------------------------------------
+</span><span id="__span-17-15"><a id="__codelineno-17-15" name="__codelineno-17-15" href="#__codelineno-17-15"></a>&#39; Inicializacao das variaveis do excel e opera��es
+</span><span id="__span-17-16"><a id="__codelineno-17-16" name="__codelineno-17-16" href="#__codelineno-17-16"></a>Dim excel, workbook
+</span><span id="__span-17-17"><a id="__codelineno-17-17" name="__codelineno-17-17" href="#__codelineno-17-17"></a>
+</span><span id="__span-17-18"><a id="__codelineno-17-18" name="__codelineno-17-18" href="#__codelineno-17-18"></a>WScript.Echo &quot;Limpeza data-raw\&quot; &amp; old_file &amp; &quot;...&quot;    # escreve uma mensagem no console
+</span><span id="__span-17-19"><a id="__codelineno-17-19" name="__codelineno-17-19" href="#__codelineno-17-19"></a>
+</span><span id="__span-17-20"><a id="__codelineno-17-20" name="__codelineno-17-20" href="#__codelineno-17-20"></a>Set excel = CreateObject(&quot;Excel.Application&quot;)    # cria uma instância do Excel
+</span><span id="__span-17-21"><a id="__codelineno-17-21" name="__codelineno-17-21" href="#__codelineno-17-21"></a>excel.Application.DisplayAlerts = False    # desliga alertas
+</span><span id="__span-17-22"><a id="__codelineno-17-22" name="__codelineno-17-22" href="#__codelineno-17-22"></a>
+</span><span id="__span-17-23"><a id="__codelineno-17-23" name="__codelineno-17-23" href="#__codelineno-17-23"></a>Set workbook = excel.Workbooks.Open(fso.GetFile(old_path))    # abre o arquivo
+</span><span id="__span-17-24"><a id="__codelineno-17-24" name="__codelineno-17-24" href="#__codelineno-17-24"></a>
+</span><span id="__span-17-25"><a id="__codelineno-17-25" name="__codelineno-17-25" href="#__codelineno-17-25"></a>On Error Resume Next
+</span><span id="__span-17-26"><a id="__codelineno-17-26" name="__codelineno-17-26" href="#__codelineno-17-26"></a>workbook.Worksheets(&quot;base&quot;).ShowAllData    # tenta limpar filtros ativos
+</span><span id="__span-17-27"><a id="__codelineno-17-27" name="__codelineno-17-27" href="#__codelineno-17-27"></a>On Error GoTo 0    # se não houver filtro, ignora o erro
+</span><span id="__span-17-28"><a id="__codelineno-17-28" name="__codelineno-17-28" href="#__codelineno-17-28"></a>
+</span><span id="__span-17-29"><a id="__codelineno-17-29" name="__codelineno-17-29" href="#__codelineno-17-29"></a>workbook.Worksheets(&quot;base&quot;).Cells.ClearFormats    # remove todas as formatações da planilha &quot;base&quot;
+</span><span id="__span-17-30"><a id="__codelineno-17-30" name="__codelineno-17-30" href="#__codelineno-17-30"></a>workbook.SaveAs data_raw &amp; new_file, 51    # salva o arquivo em data-raw\new_file com o formato 51 &quot;.xlsx sem macros&quot;
+</span><span id="__span-17-31"><a id="__codelineno-17-31" name="__codelineno-17-31" href="#__codelineno-17-31"></a>workbook.Close    # fecha o workbook
+</span><span id="__span-17-32"><a id="__codelineno-17-32" name="__codelineno-17-32" href="#__codelineno-17-32"></a>
+</span><span id="__span-17-33"><a id="__codelineno-17-33" name="__codelineno-17-33" href="#__codelineno-17-33"></a>excel.Application.DisplayAlerts = True    # reativa os alertas
+</span><span id="__span-17-34"><a id="__codelineno-17-34" name="__codelineno-17-34" href="#__codelineno-17-34"></a>excel.Application.Quit    # fecha a aplicação Excel
+</span><span id="__span-17-35"><a id="__codelineno-17-35" name="__codelineno-17-35" href="#__codelineno-17-35"></a>&#39; ------------------------------------------
+</span><span id="__span-17-36"><a id="__codelineno-17-36" name="__codelineno-17-36" href="#__codelineno-17-36"></a>&#39; Finaliza��o
+</span><span id="__span-17-37"><a id="__codelineno-17-37" name="__codelineno-17-37" href="#__codelineno-17-37"></a>Set fso = Nothing    # libera os objetos
+</span><span id="__span-17-38"><a id="__codelineno-17-38" name="__codelineno-17-38" href="#__codelineno-17-38"></a>Set workbook = Nothing
+</span><span id="__span-17-39"><a id="__codelineno-17-39" name="__codelineno-17-39" href="#__codelineno-17-39"></a>Set excel = Nothing
+</span><span id="__span-17-40"><a id="__codelineno-17-40" name="__codelineno-17-40" href="#__codelineno-17-40"></a>Set wshShell = Nothing
+</span><span id="__span-17-41"><a id="__codelineno-17-41" name="__codelineno-17-41" href="#__codelineno-17-41"></a>
+</span><span id="__span-17-42"><a id="__codelineno-17-42" name="__codelineno-17-42" href="#__codelineno-17-42"></a>wScript.Quit    # encerra o script
 </span></code></pre></div>
 </details>
-</li>
-<li>
-<p><code>shell</code>: executa o comando no terminal do Windows.</p>
-</li>
-<li>
-<p><code>if</code>: exclui o arquivo original se o nome de entrada for diferente do nome de saída</p>
-</li>
-</ul>
 </details>
-</li>
-</ul>
 </details>
-<ul>
-<li>
-<p>Em suma, o "copy.R", especialmente para o "copy_exec" e mais ainda para o "copy_exec_rec" (exemplo), irá buscar pelo arquivo "exec_rec.xlsx" "mais recente" nos email da "<a href="&#109;&#97;&#105;&#108;&#116;&#111;&#58;&#100;&#99;&#103;&#99;&#101;&#46;&#115;&#101;&#112;&#108;&#97;&#103;&#64;&#103;&#109;&#97;&#105;&#108;&#46;&#99;&#111;&#109;">&#100;&#99;&#103;&#99;&#101;&#46;&#115;&#101;&#112;&#108;&#97;&#103;&#64;&#103;&#109;&#97;&#105;&#108;&#46;&#99;&#111;&#109;</a>" e irá salvar o seu respectivo anexo na pasta "data-row".</p>
-<p>Além disso, usa a função <code>clean_excel()</code> para limpar os filtros e a formatação.</p>
+</details>
 </li>
 </ul>
 <h1 id="make-build">make build<a class="headerlink" href="#make-build" title="Permanent link">&para;</a></h1>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-29-1"><a id="__codelineno-29-1" name="__codelineno-29-1" href="#__codelineno-29-1"></a>.PHONY: help build munge test clean r_update sharepoint
-</span><span id="__span-29-2"><a id="__codelineno-29-2" name="__codelineno-29-2" href="#__codelineno-29-2"></a>
-</span><span id="__span-29-3"><a id="__codelineno-29-3" name="__codelineno-29-3" href="#__codelineno-29-3"></a>#====================================================================
-</span><span id="__span-29-4"><a id="__codelineno-29-4" name="__codelineno-29-4" href="#__codelineno-29-4"></a>MUNGE_FILES := $(shell Rscript --verbose config/R/generate_munge_files.R 2&gt; logs/log.Rout)
-</span><span id="__span-29-5"><a id="__codelineno-29-5" name="__codelineno-29-5" href="#__codelineno-29-5"></a>EXEC_FILES := $(shell Rscript --verbose config/R/generate_exec_files.R 2&gt; logs/log.Rout)
-</span><span id="__span-29-6"><a id="__codelineno-29-6" name="__codelineno-29-6" href="#__codelineno-29-6"></a>TEST_FILES := $(shell Rscript --verbose config/R/generate_test_files.R 2&gt; logs/log.Rout)
-</span><span id="__span-29-7"><a id="__codelineno-29-7" name="__codelineno-29-7" href="#__codelineno-29-7"></a>LIB := $(wildcard code/R/lib/*.R)
-</span><span id="__span-29-8"><a id="__codelineno-29-8" name="__codelineno-29-8" href="#__codelineno-29-8"></a>CONFIG := config/config.yaml
-</span><span id="__span-29-9"><a id="__codelineno-29-9" name="__codelineno-29-9" href="#__codelineno-29-9"></a>
-</span><span id="__span-29-10"><a id="__codelineno-29-10" name="__codelineno-29-10" href="#__codelineno-29-10"></a>#====================================================================
-</span><span id="__span-29-11"><a id="__codelineno-29-11" name="__codelineno-29-11" href="#__codelineno-29-11"></a>build: munge data/metadados.csv data/testes.csv code/qvw/load_bases.qvs ## Atualiza make munge, testes de consistência e metadados das bases execução
-</span><span id="__span-29-12"><a id="__codelineno-29-12" name="__codelineno-29-12" href="#__codelineno-29-12"></a>    @echo
-</span><span id="__span-29-13"><a id="__codelineno-29-13" name="__codelineno-29-13" href="#__codelineno-29-13"></a>    @echo &quot;Build completo.&quot;
-</span><span id="__span-29-14"><a id="__codelineno-29-14" name="__codelineno-29-14" href="#__codelineno-29-14"></a>    @echo &quot;-----------------------------------------------------&quot;
-</span><span id="__span-29-15"><a id="__codelineno-29-15" name="__codelineno-29-15" href="#__codelineno-29-15"></a>
-</span><span id="__span-29-16"><a id="__codelineno-29-16" name="__codelineno-29-16" href="#__codelineno-29-16"></a>munge: $(MUNGE_FILES) ## Atualiza as bases presentes em data/ que possuem script correspondente em code/R/munge/
-</span><span id="__span-29-17"><a id="__codelineno-29-17" name="__codelineno-29-17" href="#__codelineno-29-17"></a>    @echo
-</span><span id="__span-29-18"><a id="__codelineno-29-18" name="__codelineno-29-18" href="#__codelineno-29-18"></a>    @echo &quot;Munging completo.&quot;
-</span><span id="__span-29-19"><a id="__codelineno-29-19" name="__codelineno-29-19" href="#__codelineno-29-19"></a>    @echo &quot;-----------------------------------------------------&quot;
-</span><span id="__span-29-20"><a id="__codelineno-29-20" name="__codelineno-29-20" href="#__codelineno-29-20"></a>
-</span><span id="__span-29-21"><a id="__codelineno-29-21" name="__codelineno-29-21" href="#__codelineno-29-21"></a>#====================================================================
-</span><span id="__span-29-22"><a id="__codelineno-29-22" name="__codelineno-29-22" href="#__codelineno-29-22"></a>$(MUNGE_FILES): data/%.csv: code/R/munge/%.R data-raw/%.xlsx $(CONFIG) $(LIB)
-</span><span id="__span-29-23"><a id="__codelineno-29-23" name="__codelineno-29-23" href="#__codelineno-29-23"></a>    @Rscript --verbose config/R/check_pkg_version.R 2&gt; logs/log.Rout
-</span><span id="__span-29-24"><a id="__codelineno-29-24" name="__codelineno-29-24" href="#__codelineno-29-24"></a>    @echo &quot;Atualizando $*...&quot;
-</span><span id="__span-29-25"><a id="__codelineno-29-25" name="__codelineno-29-25" href="#__codelineno-29-25"></a>    @Rscript --verbose $&lt; 2&gt; logs/log.Rout
-</span><span id="__span-29-26"><a id="__codelineno-29-26" name="__codelineno-29-26" href="#__codelineno-29-26"></a>
-</span><span id="__span-29-27"><a id="__codelineno-29-27" name="__codelineno-29-27" href="#__codelineno-29-27"></a>data/metadados.csv: config/R/metadados.R $(EXEC_FILES) $(CONFIG) $(LIB)
-</span><span id="__span-29-28"><a id="__codelineno-29-28" name="__codelineno-29-28" href="#__codelineno-29-28"></a>    @echo &quot;Atualizando metadados...&quot;
-</span><span id="__span-29-29"><a id="__codelineno-29-29" name="__codelineno-29-29" href="#__codelineno-29-29"></a>    @Rscript --verbose $&lt; 2&gt; logs/log.Rout
-</span><span id="__span-29-30"><a id="__codelineno-29-30" name="__codelineno-29-30" href="#__codelineno-29-30"></a>
-</span><span id="__span-29-31"><a id="__codelineno-29-31" name="__codelineno-29-31" href="#__codelineno-29-31"></a>data/testes.csv: tests/test.R $(TEST_FILES) $(MUNGE_FILES) $(CONFIG) $(LIB)
-</span><span id="__span-29-32"><a id="__codelineno-29-32" name="__codelineno-29-32" href="#__codelineno-29-32"></a>    @echo &quot;Atualizando testes...&quot;
-</span><span id="__span-29-33"><a id="__codelineno-29-33" name="__codelineno-29-33" href="#__codelineno-29-33"></a>    @Rscript --verbose $&lt; 2&gt; logs/log.Rout
-</span><span id="__span-29-34"><a id="__codelineno-29-34" name="__codelineno-29-34" href="#__codelineno-29-34"></a>
-</span><span id="__span-29-35"><a id="__codelineno-29-35" name="__codelineno-29-35" href="#__codelineno-29-35"></a>code/qvw/load_bases.qvs: config/R/load_bases.R $(CONFIG)
-</span><span id="__span-29-36"><a id="__codelineno-29-36" name="__codelineno-29-36" href="#__codelineno-29-36"></a>    @echo &quot;Atualizando load_bases...&quot;
-</span><span id="__span-29-37"><a id="__codelineno-29-37" name="__codelineno-29-37" href="#__codelineno-29-37"></a>    @Rscript --verbose $&lt; 2&gt; logs/log.Rout
+<div class="language-text highlight"><pre><span></span><code><span id="__span-18-1"><a id="__codelineno-18-1" name="__codelineno-18-1" href="#__codelineno-18-1"></a>.PHONY: help build munge test clean r_update sharepoint
+</span><span id="__span-18-2"><a id="__codelineno-18-2" name="__codelineno-18-2" href="#__codelineno-18-2"></a>
+</span><span id="__span-18-3"><a id="__codelineno-18-3" name="__codelineno-18-3" href="#__codelineno-18-3"></a>#====================================================================
+</span><span id="__span-18-4"><a id="__codelineno-18-4" name="__codelineno-18-4" href="#__codelineno-18-4"></a>MUNGE_FILES := $(shell Rscript --verbose config/R/generate_munge_files.R 2&gt; logs/log.Rout)
+</span><span id="__span-18-5"><a id="__codelineno-18-5" name="__codelineno-18-5" href="#__codelineno-18-5"></a>EXEC_FILES := $(shell Rscript --verbose config/R/generate_exec_files.R 2&gt; logs/log.Rout)
+</span><span id="__span-18-6"><a id="__codelineno-18-6" name="__codelineno-18-6" href="#__codelineno-18-6"></a>TEST_FILES := $(shell Rscript --verbose config/R/generate_test_files.R 2&gt; logs/log.Rout)
+</span><span id="__span-18-7"><a id="__codelineno-18-7" name="__codelineno-18-7" href="#__codelineno-18-7"></a>LIB := $(wildcard code/R/lib/*.R)
+</span><span id="__span-18-8"><a id="__codelineno-18-8" name="__codelineno-18-8" href="#__codelineno-18-8"></a>CONFIG := config/config.yaml
+</span><span id="__span-18-9"><a id="__codelineno-18-9" name="__codelineno-18-9" href="#__codelineno-18-9"></a>
+</span><span id="__span-18-10"><a id="__codelineno-18-10" name="__codelineno-18-10" href="#__codelineno-18-10"></a>#====================================================================
+</span><span id="__span-18-11"><a id="__codelineno-18-11" name="__codelineno-18-11" href="#__codelineno-18-11"></a>build: munge data/metadados.csv data/testes.csv code/qvw/load_bases.qvs ## Atualiza make munge, testes de consistência e metadados das bases execução
+</span><span id="__span-18-12"><a id="__codelineno-18-12" name="__codelineno-18-12" href="#__codelineno-18-12"></a>    @echo
+</span><span id="__span-18-13"><a id="__codelineno-18-13" name="__codelineno-18-13" href="#__codelineno-18-13"></a>    @echo &quot;Build completo.&quot;
+</span><span id="__span-18-14"><a id="__codelineno-18-14" name="__codelineno-18-14" href="#__codelineno-18-14"></a>    @echo &quot;-----------------------------------------------------&quot;
+</span><span id="__span-18-15"><a id="__codelineno-18-15" name="__codelineno-18-15" href="#__codelineno-18-15"></a>
+</span><span id="__span-18-16"><a id="__codelineno-18-16" name="__codelineno-18-16" href="#__codelineno-18-16"></a>munge: $(MUNGE_FILES) ## Atualiza as bases presentes em data/ que possuem script correspondente em code/R/munge/
+</span><span id="__span-18-17"><a id="__codelineno-18-17" name="__codelineno-18-17" href="#__codelineno-18-17"></a>    @echo
+</span><span id="__span-18-18"><a id="__codelineno-18-18" name="__codelineno-18-18" href="#__codelineno-18-18"></a>    @echo &quot;Munging completo.&quot;
+</span><span id="__span-18-19"><a id="__codelineno-18-19" name="__codelineno-18-19" href="#__codelineno-18-19"></a>    @echo &quot;-----------------------------------------------------&quot;
+</span><span id="__span-18-20"><a id="__codelineno-18-20" name="__codelineno-18-20" href="#__codelineno-18-20"></a>
+</span><span id="__span-18-21"><a id="__codelineno-18-21" name="__codelineno-18-21" href="#__codelineno-18-21"></a>#====================================================================
+</span><span id="__span-18-22"><a id="__codelineno-18-22" name="__codelineno-18-22" href="#__codelineno-18-22"></a>$(MUNGE_FILES): data/%.csv: code/R/munge/%.R data-raw/%.xlsx $(CONFIG) $(LIB)
+</span><span id="__span-18-23"><a id="__codelineno-18-23" name="__codelineno-18-23" href="#__codelineno-18-23"></a>    @Rscript --verbose config/R/check_pkg_version.R 2&gt; logs/log.Rout
+</span><span id="__span-18-24"><a id="__codelineno-18-24" name="__codelineno-18-24" href="#__codelineno-18-24"></a>    @echo &quot;Atualizando $*...&quot;
+</span><span id="__span-18-25"><a id="__codelineno-18-25" name="__codelineno-18-25" href="#__codelineno-18-25"></a>    @Rscript --verbose $&lt; 2&gt; logs/log.Rout
+</span><span id="__span-18-26"><a id="__codelineno-18-26" name="__codelineno-18-26" href="#__codelineno-18-26"></a>
+</span><span id="__span-18-27"><a id="__codelineno-18-27" name="__codelineno-18-27" href="#__codelineno-18-27"></a>data/metadados.csv: config/R/metadados.R $(EXEC_FILES) $(CONFIG) $(LIB)
+</span><span id="__span-18-28"><a id="__codelineno-18-28" name="__codelineno-18-28" href="#__codelineno-18-28"></a>    @echo &quot;Atualizando metadados...&quot;
+</span><span id="__span-18-29"><a id="__codelineno-18-29" name="__codelineno-18-29" href="#__codelineno-18-29"></a>    @Rscript --verbose $&lt; 2&gt; logs/log.Rout
+</span><span id="__span-18-30"><a id="__codelineno-18-30" name="__codelineno-18-30" href="#__codelineno-18-30"></a>
+</span><span id="__span-18-31"><a id="__codelineno-18-31" name="__codelineno-18-31" href="#__codelineno-18-31"></a>data/testes.csv: tests/test.R $(TEST_FILES) $(MUNGE_FILES) $(CONFIG) $(LIB)
+</span><span id="__span-18-32"><a id="__codelineno-18-32" name="__codelineno-18-32" href="#__codelineno-18-32"></a>    @echo &quot;Atualizando testes...&quot;
+</span><span id="__span-18-33"><a id="__codelineno-18-33" name="__codelineno-18-33" href="#__codelineno-18-33"></a>    @Rscript --verbose $&lt; 2&gt; logs/log.Rout
+</span><span id="__span-18-34"><a id="__codelineno-18-34" name="__codelineno-18-34" href="#__codelineno-18-34"></a>
+</span><span id="__span-18-35"><a id="__codelineno-18-35" name="__codelineno-18-35" href="#__codelineno-18-35"></a>code/qvw/load_bases.qvs: config/R/load_bases.R $(CONFIG)
+</span><span id="__span-18-36"><a id="__codelineno-18-36" name="__codelineno-18-36" href="#__codelineno-18-36"></a>    @echo &quot;Atualizando load_bases...&quot;
+</span><span id="__span-18-37"><a id="__codelineno-18-37" name="__codelineno-18-37" href="#__codelineno-18-37"></a>    @Rscript --verbose $&lt; 2&gt; logs/log.Rout
 </span></code></pre></div>
 <ul>
 <li>
-<p><strong>MUNGE_FILES</strong>: lista o caminho dos arquivos "data/*.csv", criados com base na lista "munge_base: yes" do arquivo "config.yaml"</p>
+<p><strong>MUNGE_FILES</strong>: lista o caminho dos arquivos "data/%.csv", criados com base na lista "munge_base: yes" do arquivo "config.yaml"</p>
 <details class="note">
 <summary>MUNGE_FILES</summary>
 <p>Na etapa de parse, é atribuído ao <code>MUNGE_FILES</code> a execução no terminal do scrip R "generate_munge_files.R", o qual cria um .csv dos "munge_base: yes" do arquivo "config.yaml", na pasta "data".</p>
 <p>Além disso, direciona o "stderr" para o arquivo "log.Rout", e o "stdout" é capturado para "MUNGE_FILES".</p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-30-1"><a id="__codelineno-30-1" name="__codelineno-30-1" href="#__codelineno-30-1"></a>MUNGE_FILES := $(shell Rscript --verbose config/R/generate_munge_files.R 2&gt; logs/log.Rout)
+<div class="language-text highlight"><pre><span></span><code><span id="__span-19-1"><a id="__codelineno-19-1" name="__codelineno-19-1" href="#__codelineno-19-1"></a>MUNGE_FILES := $(shell Rscript --verbose config/R/generate_munge_files.R 2&gt; logs/log.Rout)
 </span></code></pre></div>
 <details class="note">
 <summary>generate_munge_files.R</summary>
 <p>Este arquivo lista, no stdout(), todos os .csv, para as bases que estão como "yes" no "munge_base" do arquivo "config.yaml".</p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-31-1"><a id="__codelineno-31-1" name="__codelineno-31-1" href="#__codelineno-31-1"></a>config &lt;- yaml::yaml.load_file(&quot;config/config.yaml&quot;)    # lê o arquivo &quot;config.yaml&quot;
-</span><span id="__span-31-2"><a id="__codelineno-31-2" name="__codelineno-31-2" href="#__codelineno-31-2"></a>
-</span><span id="__span-31-3"><a id="__codelineno-31-3" name="__codelineno-31-3" href="#__codelineno-31-3"></a># extrai nome dos arquivos que devem sofrer munge de acordo com config.yaml (que estão com &quot;yes&quot;)
-</span><span id="__span-31-4"><a id="__codelineno-31-4" name="__codelineno-31-4" href="#__codelineno-31-4"></a>stem &lt;- names(config$munge_base)[as.logical(config$munge_base)]
-</span><span id="__span-31-5"><a id="__codelineno-31-5" name="__codelineno-31-5" href="#__codelineno-31-5"></a>
-</span><span id="__span-31-6"><a id="__codelineno-31-6" name="__codelineno-31-6" href="#__codelineno-31-6"></a># concatena &quot;data/stem.csv&quot; (ex.: &quot;data/exec_rec.csv&quot;)
-</span><span id="__span-31-7"><a id="__codelineno-31-7" name="__codelineno-31-7" href="#__codelineno-31-7"></a>files &lt;- paste0(&quot;data/&quot;, stem, &quot;.csv&quot;)
-</span><span id="__span-31-8"><a id="__codelineno-31-8" name="__codelineno-31-8" href="#__codelineno-31-8"></a>
-</span><span id="__span-31-9"><a id="__codelineno-31-9" name="__codelineno-31-9" href="#__codelineno-31-9"></a># escreve a lista no stdout (imprime cada caminho em uma linha)
-</span><span id="__span-31-10"><a id="__codelineno-31-10" name="__codelineno-31-10" href="#__codelineno-31-10"></a>write(files, file = stdout())
+<div class="language-text highlight"><pre><span></span><code><span id="__span-20-1"><a id="__codelineno-20-1" name="__codelineno-20-1" href="#__codelineno-20-1"></a>config &lt;- yaml::yaml.load_file(&quot;config/config.yaml&quot;)    # lê o arquivo &quot;config.yaml&quot;
+</span><span id="__span-20-2"><a id="__codelineno-20-2" name="__codelineno-20-2" href="#__codelineno-20-2"></a>
+</span><span id="__span-20-3"><a id="__codelineno-20-3" name="__codelineno-20-3" href="#__codelineno-20-3"></a># extrai nome dos arquivos que devem sofrer munge de acordo com config.yaml (que estão com &quot;yes&quot;)
+</span><span id="__span-20-4"><a id="__codelineno-20-4" name="__codelineno-20-4" href="#__codelineno-20-4"></a>stem &lt;- names(config$munge_base)[as.logical(config$munge_base)]
+</span><span id="__span-20-5"><a id="__codelineno-20-5" name="__codelineno-20-5" href="#__codelineno-20-5"></a>
+</span><span id="__span-20-6"><a id="__codelineno-20-6" name="__codelineno-20-6" href="#__codelineno-20-6"></a># concatena &quot;data/stem.csv&quot; (ex.: &quot;data/exec_rec.csv&quot;)
+</span><span id="__span-20-7"><a id="__codelineno-20-7" name="__codelineno-20-7" href="#__codelineno-20-7"></a>files &lt;- paste0(&quot;data/&quot;, stem, &quot;.csv&quot;)
+</span><span id="__span-20-8"><a id="__codelineno-20-8" name="__codelineno-20-8" href="#__codelineno-20-8"></a>
+</span><span id="__span-20-9"><a id="__codelineno-20-9" name="__codelineno-20-9" href="#__codelineno-20-9"></a># escreve a lista no stdout (imprime cada caminho em uma linha)
+</span><span id="__span-20-10"><a id="__codelineno-20-10" name="__codelineno-20-10" href="#__codelineno-20-10"></a>write(files, file = stdout())
 </span></code></pre></div>
 </details>
 </details>
 </li>
 <li>
-<p><strong>EXEC_FILES</strong>: lista o caminho dos arquivos "data-raw/*.xlsx", criados com base na lista "munge_base: exec_: yes" do arquivo "config.yaml"</p>
+<p><strong>EXEC_FILES</strong>: lista o caminho dos arquivos "data-raw/%.xlsx", criados com base na lista "munge_base: exec_: yes" do arquivo "config.yaml"</p>
 <details class="note">
 <summary>EXEC_FILES</summary>
 <p>O mesmo acontece para <code>EXEC_FILES</code>, mas este executa o "generate_exec_files.R", o qual cria um .xlsx dos "munge_base: exec_: yes" do arquivo "config.yaml", na pasta "data-raw".</p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-32-1"><a id="__codelineno-32-1" name="__codelineno-32-1" href="#__codelineno-32-1"></a>EXEC_FILES := $(shell Rscript --verbose config/R/generate_exec_files.R 2&gt; logs/log.Rout)
+<div class="language-text highlight"><pre><span></span><code><span id="__span-21-1"><a id="__codelineno-21-1" name="__codelineno-21-1" href="#__codelineno-21-1"></a>EXEC_FILES := $(shell Rscript --verbose config/R/generate_exec_files.R 2&gt; logs/log.Rout)
 </span></code></pre></div>
 <details class="note">
 <summary>generate_exec_files.R</summary>
 <p>Este arquivo lista, no stdout(), todos os .xlsx, para as bases que estão como "yes" no "munge_base" e que começam com "exec_" do arquivo "config.yaml".</p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-33-1"><a id="__codelineno-33-1" name="__codelineno-33-1" href="#__codelineno-33-1"></a>config &lt;- yaml::yaml.load_file(&quot;config/config.yaml&quot;)    # lê o arquivo &quot;config.yaml&quot;
-</span><span id="__span-33-2"><a id="__codelineno-33-2" name="__codelineno-33-2" href="#__codelineno-33-2"></a>stem &lt;- names(config$munge_base)[as.logical(config$munge_base)]    # filtra as bases marcadas como ativas
-</span><span id="__span-33-3"><a id="__codelineno-33-3" name="__codelineno-33-3" href="#__codelineno-33-3"></a>stem &lt;- stem[grepl(&quot;^exec_&quot;, stem)]    # da lista do munge_base, seleciona apenas os que começam com &quot;exec_&quot;
-</span><span id="__span-33-4"><a id="__codelineno-33-4" name="__codelineno-33-4" href="#__codelineno-33-4"></a>
-</span><span id="__span-33-5"><a id="__codelineno-33-5" name="__codelineno-33-5" href="#__codelineno-33-5"></a>if(length(stem) &gt; 0) {    # caso haja base que começa com &quot;exec_&quot;...
-</span><span id="__span-33-6"><a id="__codelineno-33-6" name="__codelineno-33-6" href="#__codelineno-33-6"></a>  files &lt;- paste0(&quot;data-raw/&quot;, stem, &quot;.xlsx&quot;)    # cria o caminho &quot;data-raw/stem.xlsx&quot;
-</span><span id="__span-33-7"><a id="__codelineno-33-7" name="__codelineno-33-7" href="#__codelineno-33-7"></a>} else {    # se não houver nenhum &quot;exec_&quot;...
-</span><span id="__span-33-8"><a id="__codelineno-33-8" name="__codelineno-33-8" href="#__codelineno-33-8"></a>  files &lt;- &quot;&quot;    # o &quot;files&quot; ficará vazio &quot;&quot;
-</span><span id="__span-33-9"><a id="__codelineno-33-9" name="__codelineno-33-9" href="#__codelineno-33-9"></a>}
-</span><span id="__span-33-10"><a id="__codelineno-33-10" name="__codelineno-33-10" href="#__codelineno-33-10"></a>
-</span><span id="__span-33-11"><a id="__codelineno-33-11" name="__codelineno-33-11" href="#__codelineno-33-11"></a>write(files, file = stdout())    # escreve a lista no stdout
+<div class="language-text highlight"><pre><span></span><code><span id="__span-22-1"><a id="__codelineno-22-1" name="__codelineno-22-1" href="#__codelineno-22-1"></a>config &lt;- yaml::yaml.load_file(&quot;config/config.yaml&quot;)    # lê o arquivo &quot;config.yaml&quot;
+</span><span id="__span-22-2"><a id="__codelineno-22-2" name="__codelineno-22-2" href="#__codelineno-22-2"></a>stem &lt;- names(config$munge_base)[as.logical(config$munge_base)]    # filtra as bases marcadas como ativas
+</span><span id="__span-22-3"><a id="__codelineno-22-3" name="__codelineno-22-3" href="#__codelineno-22-3"></a>stem &lt;- stem[grepl(&quot;^exec_&quot;, stem)]    # da lista do munge_base, seleciona apenas os que começam com &quot;exec_&quot;
+</span><span id="__span-22-4"><a id="__codelineno-22-4" name="__codelineno-22-4" href="#__codelineno-22-4"></a>
+</span><span id="__span-22-5"><a id="__codelineno-22-5" name="__codelineno-22-5" href="#__codelineno-22-5"></a>if(length(stem) &gt; 0) {    # caso haja base que começa com &quot;exec_&quot;...
+</span><span id="__span-22-6"><a id="__codelineno-22-6" name="__codelineno-22-6" href="#__codelineno-22-6"></a>  files &lt;- paste0(&quot;data-raw/&quot;, stem, &quot;.xlsx&quot;)    # cria o caminho &quot;data-raw/stem.xlsx&quot;
+</span><span id="__span-22-7"><a id="__codelineno-22-7" name="__codelineno-22-7" href="#__codelineno-22-7"></a>} else {    # se não houver nenhum &quot;exec_&quot;...
+</span><span id="__span-22-8"><a id="__codelineno-22-8" name="__codelineno-22-8" href="#__codelineno-22-8"></a>  files &lt;- &quot;&quot;    # o &quot;files&quot; ficará vazio &quot;&quot;
+</span><span id="__span-22-9"><a id="__codelineno-22-9" name="__codelineno-22-9" href="#__codelineno-22-9"></a>}
+</span><span id="__span-22-10"><a id="__codelineno-22-10" name="__codelineno-22-10" href="#__codelineno-22-10"></a>
+</span><span id="__span-22-11"><a id="__codelineno-22-11" name="__codelineno-22-11" href="#__codelineno-22-11"></a>write(files, file = stdout())    # escreve a lista no stdout
 </span></code></pre></div>
 </details>
 </details>
@@ -815,22 +711,22 @@ O "config" lê o arquivo congif.yaml.</p>
 <details class="note">
 <summary>TEST_FILES</summary>
 <p>O mesmo acontece para <code>TEST_FILES</code>, mas este executa o "generate_test_files.R", o qual cria um .R dos "test: tests: yes" do arquivo "config.yaml", além de adicionar "test_" no começo do nome. Adiciona ainda a base (base: "reest") como um desses arquivos. Esses arquivos são salvos na pasta "tests/test".</p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-34-1"><a id="__codelineno-34-1" name="__codelineno-34-1" href="#__codelineno-34-1"></a>TEST_FILES := $(shell Rscript --verbose config/R/generate_test_files.R 2&gt; logs/log.Rout)
+<div class="language-text highlight"><pre><span></span><code><span id="__span-23-1"><a id="__codelineno-23-1" name="__codelineno-23-1" href="#__codelineno-23-1"></a>TEST_FILES := $(shell Rscript --verbose config/R/generate_test_files.R 2&gt; logs/log.Rout)
 </span></code></pre></div>
 <details class="note">
 <summary>generate_test_files.R</summary>
 <p>Este arquivo lista, no stdout(), todos os .R, para as bases que estão como "yes" no "test: tests:" do arquivo "config.yaml". Adiciona no começo do nome o prefixo "test_".</p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-35-1"><a id="__codelineno-35-1" name="__codelineno-35-1" href="#__codelineno-35-1"></a>config &lt;- yaml::yaml.load_file(&quot;config/config.yaml&quot;)    # lê o arquivo &quot;config.yaml&quot;
-</span><span id="__span-35-2"><a id="__codelineno-35-2" name="__codelineno-35-2" href="#__codelineno-35-2"></a>
-</span><span id="__span-35-3"><a id="__codelineno-35-3" name="__codelineno-35-3" href="#__codelineno-35-3"></a>if(config$test$run_tests == TRUE) {    # se &quot;test: run_tests: yes&quot; do config.yaml...
-</span><span id="__span-35-4"><a id="__codelineno-35-4" name="__codelineno-35-4" href="#__codelineno-35-4"></a>  stem &lt;- names(config$test$tests)[as.logical(config$test$tests)]    # filtra as bases marcadas como ativas do &quot;test: tests:&quot;
-</span><span id="__span-35-5"><a id="__codelineno-35-5" name="__codelineno-35-5" href="#__codelineno-35-5"></a>  stem &lt;- c(config$test$base, stem)    # adiciona &quot;reest&quot; na lista (&quot;test: base: reest&quot;)
-</span><span id="__span-35-6"><a id="__codelineno-35-6" name="__codelineno-35-6" href="#__codelineno-35-6"></a>  files &lt;- paste0(&quot;tests/test/test_&quot;, stem, &quot;.R&quot;)    # cria o caminho &quot;tests/test/test_stem.R&quot;    # ex.: &quot;tests/test/test_reest.R&quot;
-</span><span id="__span-35-7"><a id="__codelineno-35-7" name="__codelineno-35-7" href="#__codelineno-35-7"></a>} else{    # se &quot;test: run_tests:&quot; não estiver como sim
-</span><span id="__span-35-8"><a id="__codelineno-35-8" name="__codelineno-35-8" href="#__codelineno-35-8"></a>  files &lt;- &quot;&quot;    # o file ficará vazio &quot;&quot;
-</span><span id="__span-35-9"><a id="__codelineno-35-9" name="__codelineno-35-9" href="#__codelineno-35-9"></a>}
-</span><span id="__span-35-10"><a id="__codelineno-35-10" name="__codelineno-35-10" href="#__codelineno-35-10"></a>
-</span><span id="__span-35-11"><a id="__codelineno-35-11" name="__codelineno-35-11" href="#__codelineno-35-11"></a>write(files, file = stdout())    # escreve a lista no stdout
+<div class="language-text highlight"><pre><span></span><code><span id="__span-24-1"><a id="__codelineno-24-1" name="__codelineno-24-1" href="#__codelineno-24-1"></a>config &lt;- yaml::yaml.load_file(&quot;config/config.yaml&quot;)    # lê o arquivo &quot;config.yaml&quot;
+</span><span id="__span-24-2"><a id="__codelineno-24-2" name="__codelineno-24-2" href="#__codelineno-24-2"></a>
+</span><span id="__span-24-3"><a id="__codelineno-24-3" name="__codelineno-24-3" href="#__codelineno-24-3"></a>if(config$test$run_tests == TRUE) {    # se &quot;test: run_tests: yes&quot; do config.yaml...
+</span><span id="__span-24-4"><a id="__codelineno-24-4" name="__codelineno-24-4" href="#__codelineno-24-4"></a>  stem &lt;- names(config$test$tests)[as.logical(config$test$tests)]    # filtra as bases marcadas como ativas do &quot;test: tests:&quot;
+</span><span id="__span-24-5"><a id="__codelineno-24-5" name="__codelineno-24-5" href="#__codelineno-24-5"></a>  stem &lt;- c(config$test$base, stem)    # adiciona &quot;reest&quot; na lista (&quot;test: base: reest&quot;)
+</span><span id="__span-24-6"><a id="__codelineno-24-6" name="__codelineno-24-6" href="#__codelineno-24-6"></a>  files &lt;- paste0(&quot;tests/test/test_&quot;, stem, &quot;.R&quot;)    # cria o caminho &quot;tests/test/test_stem.R&quot;    # ex.: &quot;tests/test/test_reest.R&quot;
+</span><span id="__span-24-7"><a id="__codelineno-24-7" name="__codelineno-24-7" href="#__codelineno-24-7"></a>} else{    # se &quot;test: run_tests:&quot; não estiver como sim
+</span><span id="__span-24-8"><a id="__codelineno-24-8" name="__codelineno-24-8" href="#__codelineno-24-8"></a>  files &lt;- &quot;&quot;    # o file ficará vazio &quot;&quot;
+</span><span id="__span-24-9"><a id="__codelineno-24-9" name="__codelineno-24-9" href="#__codelineno-24-9"></a>}
+</span><span id="__span-24-10"><a id="__codelineno-24-10" name="__codelineno-24-10" href="#__codelineno-24-10"></a>
+</span><span id="__span-24-11"><a id="__codelineno-24-11" name="__codelineno-24-11" href="#__codelineno-24-11"></a>write(files, file = stdout())    # escreve a lista no stdout
 </span></code></pre></div>
 </details>
 </details>
@@ -840,7 +736,7 @@ O "config" lê o arquivo congif.yaml.</p>
 <details class="note">
 <summary>LIB</summary>
 <p>No caso do <code>LIB</code>, ele lista todos os caminhos com arquivos .R dentro da pasta "code/R/lib/". Exemplo: "code/R/lib/demonstrativo_fiscal.R code/R/lib/set_criterios_desp.R code/R/lib/set_criterios_rec.R".</p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-36-1"><a id="__codelineno-36-1" name="__codelineno-36-1" href="#__codelineno-36-1"></a>LIB := $(wildcard code/R/lib/*.R)
+<div class="language-text highlight"><pre><span></span><code><span id="__span-25-1"><a id="__codelineno-25-1" name="__codelineno-25-1" href="#__codelineno-25-1"></a>LIB := $(wildcard code/R/lib/*.R)
 </span></code></pre></div>
 </details>
 </li>
@@ -849,75 +745,295 @@ O "config" lê o arquivo congif.yaml.</p>
 <details class="note">
 <summary>CONFIG</summary>
 <p>No caso do <code>CONFIG</code>, ele representa o arquivo config/config.yaml.</p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-37-1"><a id="__codelineno-37-1" name="__codelineno-37-1" href="#__codelineno-37-1"></a>CONFIG := config/config.yaml
+<div class="language-text highlight"><pre><span></span><code><span id="__span-26-1"><a id="__codelineno-26-1" name="__codelineno-26-1" href="#__codelineno-26-1"></a>CONFIG := config/config.yaml
 </span></code></pre></div>
 </details>
 </li>
 <li>
-<p><strong>$(MUNGE_FILES)</strong>: se algum dos arquivos "code/R/munge/%.R", "data-raw/%.xlsx", "config.yaml" ou "code/R/lib/*.R" for mais novo que o "data/%.csv", instala/atualiza os pacotes exigidos, conforme versão especificada no "config/config.yaml"</p>
+<p><strong>$(MUNGE_FILES)</strong>: se algum dos arquivos "code/R/munge/%.R", "data-raw/%.xlsx", "config.yaml" ou "code/R/lib/*.R" for mais novo que o "data/%.csv", instala/atualiza os pacotes exigidos, conforme versão especificada no "config.yaml"</p>
 <details class="note">
 <summary>$(MUNGE_FILES)</summary>
 <p>Os alvos são os arquivos listados pelo "MUNGE_FILES", que tenha como padrão o formato "data/%.csv".</p>
 <p>E, para cada um deles, tem-se como pré-requisito um script R e um .xlsx correspondente ("code/R/munge/%.R" e "data-raw/%.xlsx"), com o mesmo "stem". Além do "config.yaml" e dos arquivos "code/R/lib/*.R"</p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-38-1"><a id="__codelineno-38-1" name="__codelineno-38-1" href="#__codelineno-38-1"></a>$(MUNGE_FILES): data/%.csv: code/R/munge/%.R data-raw/%.xlsx $(CONFIG) $(LIB)
-</span><span id="__span-38-2"><a id="__codelineno-38-2" name="__codelineno-38-2" href="#__codelineno-38-2"></a>    @Rscript --verbose config/R/check_pkg_version.R 2&gt; logs/log.Rout    # checagem de versões de pacotes R
-</span><span id="__span-38-3"><a id="__codelineno-38-3" name="__codelineno-38-3" href="#__codelineno-38-3"></a>    @echo &quot;Atualizando $*...&quot;    # mensagem informativa
-</span><span id="__span-38-4"><a id="__codelineno-38-4" name="__codelineno-38-4" href="#__codelineno-38-4"></a>    @Rscript --verbose $&lt; 2&gt; logs/log.Rout    # executa o script R específico da base
+<div class="language-text highlight"><pre><span></span><code><span id="__span-27-1"><a id="__codelineno-27-1" name="__codelineno-27-1" href="#__codelineno-27-1"></a>$(MUNGE_FILES): data/%.csv: code/R/munge/%.R data-raw/%.xlsx $(CONFIG) $(LIB)
+</span><span id="__span-27-2"><a id="__codelineno-27-2" name="__codelineno-27-2" href="#__codelineno-27-2"></a>    @Rscript --verbose config/R/check_pkg_version.R 2&gt; logs/log.Rout    # checagem de versões de pacotes R
+</span><span id="__span-27-3"><a id="__codelineno-27-3" name="__codelineno-27-3" href="#__codelineno-27-3"></a>    @echo &quot;Atualizando $*...&quot;    # mensagem informativa
+</span><span id="__span-27-4"><a id="__codelineno-27-4" name="__codelineno-27-4" href="#__codelineno-27-4"></a>    @Rscript --verbose $&lt; 2&gt; logs/log.Rout    # executa o script R específico da base
 </span></code></pre></div>
 <p>Dessa forma, se qualquer um desses arquivos for "mais novo" que o "MUNGE_FILES" (ex.: "data/exec_rec.csv"), é executado o script R "config/R/check_pkg_version.R".</p>
+<p>Este script R irá conferir se o pacote está na versão especificada, e, caso não esteja e se o usuário permitir, os pacotes serão instalados, conforme "version:" e "remote:" especificados no "config.yaml".</p>
 <details class="note">
 <summary>check_pkg_version.R</summary>
-<p>Garante que os pacotes R exigidos estejam instalados nas versões especificadas no config.yaml.</p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-39-1"><a id="__codelineno-39-1" name="__codelineno-39-1" href="#__codelineno-39-1"></a>source(&quot;config/R/helper.R&quot;)    # carrega funções auxiliares definidas em helper.R
-</span><span id="__span-39-2"><a id="__codelineno-39-2" name="__codelineno-39-2" href="#__codelineno-39-2"></a>
-</span><span id="__span-39-3"><a id="__codelineno-39-3" name="__codelineno-39-3" href="#__codelineno-39-3"></a>update_infra_pkgs()    # instala pacotes yaml e devtools que permitem restante do fluxo
-</span><span id="__span-39-4"><a id="__codelineno-39-4" name="__codelineno-39-4" href="#__codelineno-39-4"></a>
-</span><span id="__span-39-5"><a id="__codelineno-39-5" name="__codelineno-39-5" href="#__codelineno-39-5"></a>config &lt;- yaml::yaml.load_file(&quot;config/config.yaml&quot;)
-</span><span id="__span-39-6"><a id="__codelineno-39-6" name="__codelineno-39-6" href="#__codelineno-39-6"></a>
-</span><span id="__span-39-7"><a id="__codelineno-39-7" name="__codelineno-39-7" href="#__codelineno-39-7"></a>required_versions &lt;- lapply(config$pkgs, `[[`, &quot;version&quot;)
-</span><span id="__span-39-8"><a id="__codelineno-39-8" name="__codelineno-39-8" href="#__codelineno-39-8"></a>
-</span><span id="__span-39-9"><a id="__codelineno-39-9" name="__codelineno-39-9" href="#__codelineno-39-9"></a># vetor com TRUE/FALSE informando se o pacote precisa ser atualizado
-</span><span id="__span-39-10"><a id="__codelineno-39-10" name="__codelineno-39-10" href="#__codelineno-39-10"></a>update_pkg &lt;- Map(need_update,
-</span><span id="__span-39-11"><a id="__codelineno-39-11" name="__codelineno-39-11" href="#__codelineno-39-11"></a>                  names(config$pkgs),
-</span><span id="__span-39-12"><a id="__codelineno-39-12" name="__codelineno-39-12" href="#__codelineno-39-12"></a>                  required_versions)
-</span><span id="__span-39-13"><a id="__codelineno-39-13" name="__codelineno-39-13" href="#__codelineno-39-13"></a>
-</span><span id="__span-39-14"><a id="__codelineno-39-14" name="__codelineno-39-14" href="#__codelineno-39-14"></a>update_pkg &lt;- names(update_pkg[update_pkg==TRUE])
-</span><span id="__span-39-15"><a id="__codelineno-39-15" name="__codelineno-39-15" href="#__codelineno-39-15"></a>
-</span><span id="__span-39-16"><a id="__codelineno-39-16" name="__codelineno-39-16" href="#__codelineno-39-16"></a># instala os pacotes que estao desatualizados que foram autorizadas pelo usuario
-</span><span id="__span-39-17"><a id="__codelineno-39-17" name="__codelineno-39-17" href="#__codelineno-39-17"></a>invisible(lapply(update_pkg, function(pkg) {
-</span><span id="__span-39-18"><a id="__codelineno-39-18" name="__codelineno-39-18" href="#__codelineno-39-18"></a>  if(user_auth(pkg, required_versions[[pkg]])) {
-</span><span id="__span-39-19"><a id="__codelineno-39-19" name="__codelineno-39-19" href="#__codelineno-39-19"></a>    cat(paste0(&quot;  Instalando pacote &quot;, pkg, &quot;...\n&quot;))
-</span><span id="__span-39-20"><a id="__codelineno-39-20" name="__codelineno-39-20" href="#__codelineno-39-20"></a>    install_pkg(pkg, # ? preciso dar detach nos pacotes antes de instalar??
-</span><span id="__span-39-21"><a id="__codelineno-39-21" name="__codelineno-39-21" href="#__codelineno-39-21"></a>                config$pkgs[[pkg]]$version,
-</span><span id="__span-39-22"><a id="__codelineno-39-22" name="__codelineno-39-22" href="#__codelineno-39-22"></a>                config$pkgs[[pkg]]$remote)
-</span><span id="__span-39-23"><a id="__codelineno-39-23" name="__codelineno-39-23" href="#__codelineno-39-23"></a>  }
-</span><span id="__span-39-24"><a id="__codelineno-39-24" name="__codelineno-39-24" href="#__codelineno-39-24"></a>  if(need_update(pkg, config$pkgs[[pkg]]$version)) {
-</span><span id="__span-39-25"><a id="__codelineno-39-25" name="__codelineno-39-25" href="#__codelineno-39-25"></a>    cat(paste0(&quot;  Instale a versão &quot;,config$pkgs[[pkg]]$version ,&quot; do pacote &quot;,
-</span><span id="__span-39-26"><a id="__codelineno-39-26" name="__codelineno-39-26" href="#__codelineno-39-26"></a>               pkg,&quot; para prosseguir.\n&quot;))
-</span><span id="__span-39-27"><a id="__codelineno-39-27" name="__codelineno-39-27" href="#__codelineno-39-27"></a>    stop()
-</span><span id="__span-39-28"><a id="__codelineno-39-28" name="__codelineno-39-28" href="#__codelineno-39-28"></a>  }
-</span><span id="__span-39-29"><a id="__codelineno-39-29" name="__codelineno-39-29" href="#__codelineno-39-29"></a>}))
+<p>Confere se os pacotes R estão instalados e se a versão instalada está correta com a versão exigida.</p>
+<p>Caso haja algum problema, inicia um processo de instalação/atualização dos pacotes R, nas versões e nos diretórios especificados no "config.yaml".</p>
+<p>O usuário deve autorizar ou não a instalação.</p>
+<p>Se o processo falhar, o usuário deve fazer a instalação dos pacotes.</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-28-1"><a id="__codelineno-28-1" name="__codelineno-28-1" href="#__codelineno-28-1"></a>source(&quot;config/R/helper.R&quot;)    # carrega funções auxiliares definidas em helper.R
+</span><span id="__span-28-2"><a id="__codelineno-28-2" name="__codelineno-28-2" href="#__codelineno-28-2"></a>
+</span><span id="__span-28-3"><a id="__codelineno-28-3" name="__codelineno-28-3" href="#__codelineno-28-3"></a>update_infra_pkgs()    # instala pacotes remotes, yaml e devtools que permitem restante do fluxo
+</span><span id="__span-28-4"><a id="__codelineno-28-4" name="__codelineno-28-4" href="#__codelineno-28-4"></a>
+</span><span id="__span-28-5"><a id="__codelineno-28-5" name="__codelineno-28-5" href="#__codelineno-28-5"></a>config &lt;- yaml::yaml.load_file(&quot;config/config.yaml&quot;)    # lê o arquivo &quot;config.yaml&quot;
+</span><span id="__span-28-6"><a id="__codelineno-28-6" name="__codelineno-28-6" href="#__codelineno-28-6"></a>
+</span><span id="__span-28-7"><a id="__codelineno-28-7" name="__codelineno-28-7" href="#__codelineno-28-7"></a># na chave &quot;pkgs&quot; do &quot;config.yaml&quot;, estão definidos o &quot;version&quot; e o &quot;remote&quot; de cada &quot;pkgs&quot;
+</span><span id="__span-28-8"><a id="__codelineno-28-8" name="__codelineno-28-8" href="#__codelineno-28-8"></a>required_versions &lt;- lapply(config$pkgs, `[[`, &quot;version&quot;)    # lista nomeada, em que o nome é o &quot;pkgs&quot; e o valor é o &quot;version&quot;
+</span><span id="__span-28-9"><a id="__codelineno-28-9" name="__codelineno-28-9" href="#__codelineno-28-9"></a>
+</span><span id="__span-28-10"><a id="__codelineno-28-10" name="__codelineno-28-10" href="#__codelineno-28-10"></a># vetor com TRUE/FALSE informando se o pacote precisa ser atualizado
+</span><span id="__span-28-11"><a id="__codelineno-28-11" name="__codelineno-28-11" href="#__codelineno-28-11"></a>update_pkg &lt;- Map(need_update,    # retorna TRUE, se precisar instalar/atualizar, e FALSE, caso contrário
+</span><span id="__span-28-12"><a id="__codelineno-28-12" name="__codelineno-28-12" href="#__codelineno-28-12"></a>                  names(config$pkgs),    # lista os pacotes da chave &quot;pkgs&quot; do arquivo &quot;config.yaml&quot;
+</span><span id="__span-28-13"><a id="__codelineno-28-13" name="__codelineno-28-13" href="#__codelineno-28-13"></a>                  required_versions)
+</span><span id="__span-28-14"><a id="__codelineno-28-14" name="__codelineno-28-14" href="#__codelineno-28-14"></a>
+</span><span id="__span-28-15"><a id="__codelineno-28-15" name="__codelineno-28-15" href="#__codelineno-28-15"></a># retorna o nome &quot;pkgs&quot;, dos &quot;pkg&quot; que devem ser atualizados/instalados (need_update = TRUE)
+</span><span id="__span-28-16"><a id="__codelineno-28-16" name="__codelineno-28-16" href="#__codelineno-28-16"></a>update_pkg &lt;- names(update_pkg[update_pkg==TRUE])
+</span><span id="__span-28-17"><a id="__codelineno-28-17" name="__codelineno-28-17" href="#__codelineno-28-17"></a>
+</span><span id="__span-28-18"><a id="__codelineno-28-18" name="__codelineno-28-18" href="#__codelineno-28-18"></a># instala os pacotes que estao desatualizados que foram autorizadas pelo usuario
+</span><span id="__span-28-19"><a id="__codelineno-28-19" name="__codelineno-28-19" href="#__codelineno-28-19"></a>invisible(lapply(update_pkg, function(pkg) {
+</span><span id="__span-28-20"><a id="__codelineno-28-20" name="__codelineno-28-20" href="#__codelineno-28-20"></a>  if(user_auth(pkg, required_versions[[pkg]])) {    # se o usuário responder que deseja instalar/atualizar o &quot;pkg&quot;
+</span><span id="__span-28-21"><a id="__codelineno-28-21" name="__codelineno-28-21" href="#__codelineno-28-21"></a>    cat(paste0(&quot;  Instalando pacote &quot;, pkg, &quot;...\n&quot;))    # informa que o pacote está sendo instalado
+</span><span id="__span-28-22"><a id="__codelineno-28-22" name="__codelineno-28-22" href="#__codelineno-28-22"></a>    install_pkg(pkg, # ? preciso dar detach nos pacotes antes de instalar??
+</span><span id="__span-28-23"><a id="__codelineno-28-23" name="__codelineno-28-23" href="#__codelineno-28-23"></a>                config$pkgs[[pkg]]$version,
+</span><span id="__span-28-24"><a id="__codelineno-28-24" name="__codelineno-28-24" href="#__codelineno-28-24"></a>                config$pkgs[[pkg]]$remote)    # instala o pacote, na versão e no remote especificados no &quot;config.yaml&quot;
+</span><span id="__span-28-25"><a id="__codelineno-28-25" name="__codelineno-28-25" href="#__codelineno-28-25"></a>  }
+</span><span id="__span-28-26"><a id="__codelineno-28-26" name="__codelineno-28-26" href="#__codelineno-28-26"></a>  if(need_update(pkg, config$pkgs[[pkg]]$version)) {    # após atualização, revalida com &quot;need_update()&quot; se está tudo certo
+</span><span id="__span-28-27"><a id="__codelineno-28-27" name="__codelineno-28-27" href="#__codelineno-28-27"></a>    cat(paste0(&quot;  Instale a versão &quot;,config$pkgs[[pkg]]$version ,&quot; do pacote &quot;,
+</span><span id="__span-28-28"><a id="__codelineno-28-28" name="__codelineno-28-28" href="#__codelineno-28-28"></a>               pkg,&quot; para prosseguir.\n&quot;))    # emite mensagem solicitando que instale a versão
+</span><span id="__span-28-29"><a id="__codelineno-28-29" name="__codelineno-28-29" href="#__codelineno-28-29"></a>    stop()    # interrompe o fluxo
+</span><span id="__span-28-30"><a id="__codelineno-28-30" name="__codelineno-28-30" href="#__codelineno-28-30"></a>  }
+</span><span id="__span-28-31"><a id="__codelineno-28-31" name="__codelineno-28-31" href="#__codelineno-28-31"></a>}))
 </span></code></pre></div>
 <details class="note">
-<summary>update_infra_pkgs</summary>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-40-1"><a id="__codelineno-40-1" name="__codelineno-40-1" href="#__codelineno-40-1"></a>update_infra_pkgs &lt;- function() {
-</span><span id="__span-40-2"><a id="__codelineno-40-2" name="__codelineno-40-2" href="#__codelineno-40-2"></a>  if(!&quot;remotes&quot; %in% installed.packages()){
-</span><span id="__span-40-3"><a id="__codelineno-40-3" name="__codelineno-40-3" href="#__codelineno-40-3"></a>    cat(&quot;Instalando remotes...\n&quot;)
-</span><span id="__span-40-4"><a id="__codelineno-40-4" name="__codelineno-40-4" href="#__codelineno-40-4"></a>    install.packages(&quot;remotes&quot;, repos = &quot;https://cran.r-project.org/&quot;)
-</span><span id="__span-40-5"><a id="__codelineno-40-5" name="__codelineno-40-5" href="#__codelineno-40-5"></a>  }
-</span><span id="__span-40-6"><a id="__codelineno-40-6" name="__codelineno-40-6" href="#__codelineno-40-6"></a>
-</span><span id="__span-40-7"><a id="__codelineno-40-7" name="__codelineno-40-7" href="#__codelineno-40-7"></a>  if(packageVersion(&quot;yaml&quot;) &lt; &quot;2.1.13&quot;) {
-</span><span id="__span-40-8"><a id="__codelineno-40-8" name="__codelineno-40-8" href="#__codelineno-40-8"></a>    cat(&quot;Instalando pacote essencial yaml...&quot;)
-</span><span id="__span-40-9"><a id="__codelineno-40-9" name="__codelineno-40-9" href="#__codelineno-40-9"></a>    install_pkg(&quot;yaml&quot;, version = &quot;2.1.13&quot;, remote = &quot;cran&quot;)
-</span><span id="__span-40-10"><a id="__codelineno-40-10" name="__codelineno-40-10" href="#__codelineno-40-10"></a>  }
-</span><span id="__span-40-11"><a id="__codelineno-40-11" name="__codelineno-40-11" href="#__codelineno-40-11"></a>
-</span><span id="__span-40-12"><a id="__codelineno-40-12" name="__codelineno-40-12" href="#__codelineno-40-12"></a>  if(packageVersion(&quot;devtools&quot;) &lt; &quot;1.11.1&quot;) {
-</span><span id="__span-40-13"><a id="__codelineno-40-13" name="__codelineno-40-13" href="#__codelineno-40-13"></a>    cat(&quot;Instalando pacote essencial devtools...&quot;)
-</span><span id="__span-40-14"><a id="__codelineno-40-14" name="__codelineno-40-14" href="#__codelineno-40-14"></a>    install_pkg(&quot;devtools&quot;, version = &quot;1.11.1&quot;, remote = &quot;cran&quot;)
-</span><span id="__span-40-15"><a id="__codelineno-40-15" name="__codelineno-40-15" href="#__codelineno-40-15"></a>  }
-</span><span id="__span-40-16"><a id="__codelineno-40-16" name="__codelineno-40-16" href="#__codelineno-40-16"></a>}
+<summary>update_infra_pkgs()</summary>
+<p>Instala o "remotes", se não estiver instalado. Ele é utilizado para baixar e instalar pacotes R armazenados no GitHub, GitLab, Bitbucket e outros.</p>
+<p>Instala o "yaml", caso esteja em versão abaixo da requerida. Ele é utilizado para ler os arquivos .yaml.</p>
+<p>Instala o "devtools", caso esteja em versão abaixo da requerida. Ele é utilizado para desenvolver pacotes R.</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-29-1"><a id="__codelineno-29-1" name="__codelineno-29-1" href="#__codelineno-29-1"></a>update_infra_pkgs &lt;- function() {
+</span><span id="__span-29-2"><a id="__codelineno-29-2" name="__codelineno-29-2" href="#__codelineno-29-2"></a>  if(!&quot;remotes&quot; %in% installed.packages()){    # se o pacote remotes não estiver instalado,
+</span><span id="__span-29-3"><a id="__codelineno-29-3" name="__codelineno-29-3" href="#__codelineno-29-3"></a>    cat(&quot;Instalando remotes...\n&quot;)
+</span><span id="__span-29-4"><a id="__codelineno-29-4" name="__codelineno-29-4" href="#__codelineno-29-4"></a>    install.packages(&quot;remotes&quot;, repos = &quot;https://cran.r-project.org/&quot;)    # instala &quot;remotes&quot; a partir do CRAN
+</span><span id="__span-29-5"><a id="__codelineno-29-5" name="__codelineno-29-5" href="#__codelineno-29-5"></a>  }
+</span><span id="__span-29-6"><a id="__codelineno-29-6" name="__codelineno-29-6" href="#__codelineno-29-6"></a>
+</span><span id="__span-29-7"><a id="__codelineno-29-7" name="__codelineno-29-7" href="#__codelineno-29-7"></a>  # Obs.: essa versão é de 2014
+</span><span id="__span-29-8"><a id="__codelineno-29-8" name="__codelineno-29-8" href="#__codelineno-29-8"></a>  if(packageVersion(&quot;yaml&quot;) &lt; &quot;2.1.13&quot;) {    # se a versão do &quot;yaml&quot; for menor que &quot;2.1.13&quot;
+</span><span id="__span-29-9"><a id="__codelineno-29-9" name="__codelineno-29-9" href="#__codelineno-29-9"></a>    cat(&quot;Instalando pacote essencial yaml...&quot;)
+</span><span id="__span-29-10"><a id="__codelineno-29-10" name="__codelineno-29-10" href="#__codelineno-29-10"></a>    install_pkg(&quot;yaml&quot;, version = &quot;2.1.13&quot;, remote = &quot;cran&quot;)    # instala a versão &quot;2.1.13&quot; do &quot;yaml&quot;
+</span><span id="__span-29-11"><a id="__codelineno-29-11" name="__codelineno-29-11" href="#__codelineno-29-11"></a>  }
+</span><span id="__span-29-12"><a id="__codelineno-29-12" name="__codelineno-29-12" href="#__codelineno-29-12"></a>
+</span><span id="__span-29-13"><a id="__codelineno-29-13" name="__codelineno-29-13" href="#__codelineno-29-13"></a>  # Obs.: essa versão é de 2016
+</span><span id="__span-29-14"><a id="__codelineno-29-14" name="__codelineno-29-14" href="#__codelineno-29-14"></a>  if(packageVersion(&quot;devtools&quot;) &lt; &quot;1.11.1&quot;) {    # se a versão do &quot;devtools&quot; for menor que &quot;1.11.1&quot;
+</span><span id="__span-29-15"><a id="__codelineno-29-15" name="__codelineno-29-15" href="#__codelineno-29-15"></a>    cat(&quot;Instalando pacote essencial devtools...&quot;)
+</span><span id="__span-29-16"><a id="__codelineno-29-16" name="__codelineno-29-16" href="#__codelineno-29-16"></a>    install_pkg(&quot;devtools&quot;, version = &quot;1.11.1&quot;, remote = &quot;cran&quot;)    # instala a versão &quot;1.11.1&quot; do &quot;devtools&quot;
+</span><span id="__span-29-17"><a id="__codelineno-29-17" name="__codelineno-29-17" href="#__codelineno-29-17"></a>  }
+</span><span id="__span-29-18"><a id="__codelineno-29-18" name="__codelineno-29-18" href="#__codelineno-29-18"></a>}
+</span></code></pre></div>
+<details class="note">
+<summary>install_pkg()</summary>
+<p>Instala o "pkg" (pacote), na "version" (versão), que consta no "remote" (repositório) especificado.</p>
+<p>Os "remote" previstos são CRAN, Bitbucket e GitHub, sendo necessário definir token/credenciais para acessar os repositórios privados.</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-30-1"><a id="__codelineno-30-1" name="__codelineno-30-1" href="#__codelineno-30-1"></a>install_pkg &lt;- function(pkg, version, remote) {
+</span><span id="__span-30-2"><a id="__codelineno-30-2" name="__codelineno-30-2" href="#__codelineno-30-2"></a>
+</span><span id="__span-30-3"><a id="__codelineno-30-3" name="__codelineno-30-3" href="#__codelineno-30-3"></a>  getwd()    # retorna o caminho do diretório atual
+</span><span id="__span-30-4"><a id="__codelineno-30-4" name="__codelineno-30-4" href="#__codelineno-30-4"></a>
+</span><span id="__span-30-5"><a id="__codelineno-30-5" name="__codelineno-30-5" href="#__codelineno-30-5"></a>  options(repos = c(CRAN = &quot;https://cran.rstudio.com/&quot;))    # define URL do repositório para uso pelo &quot;update.packages()&quot;
+</span><span id="__span-30-6"><a id="__codelineno-30-6" name="__codelineno-30-6" href="#__codelineno-30-6"></a>
+</span><span id="__span-30-7"><a id="__codelineno-30-7" name="__codelineno-30-7" href="#__codelineno-30-7"></a>  personal_token &lt;- Sys.getenv(&quot;GITHUB_SPLOR_PAT&quot;)    # obtém os valores das variáveis ​​de ambiente
+</span><span id="__span-30-8"><a id="__codelineno-30-8" name="__codelineno-30-8" href="#__codelineno-30-8"></a>
+</span><span id="__span-30-9"><a id="__codelineno-30-9" name="__codelineno-30-9" href="#__codelineno-30-9"></a>  if (identical(personal_token, &quot;&quot;) || is.na(personal_token)) {    # se não existe token no ambiente, tenta ler arquivo
+</span><span id="__span-30-10"><a id="__codelineno-30-10" name="__codelineno-30-10" href="#__codelineno-30-10"></a>    token_path &lt;- &quot;config/github_token.txt&quot;    # arquivo com token, ignorado pelo .gitignore
+</span><span id="__span-30-11"><a id="__codelineno-30-11" name="__codelineno-30-11" href="#__codelineno-30-11"></a>
+</span><span id="__span-30-12"><a id="__codelineno-30-12" name="__codelineno-30-12" href="#__codelineno-30-12"></a>    if (file.exists(token_path)) {    # se achar o arquivo com token
+</span><span id="__span-30-13"><a id="__codelineno-30-13" name="__codelineno-30-13" href="#__codelineno-30-13"></a>      personal_token &lt;- readLines(token_path, warn = FALSE)    # lê as linhas de texto de uma conexão ou uma string de caracteres
+</span><span id="__span-30-14"><a id="__codelineno-30-14" name="__codelineno-30-14" href="#__codelineno-30-14"></a>      personal_token &lt;- trimws(personal_token)  # remove espaços em branco à esqueda e à direita de uma string de caracteres
+</span><span id="__span-30-15"><a id="__codelineno-30-15" name="__codelineno-30-15" href="#__codelineno-30-15"></a>
+</span><span id="__span-30-16"><a id="__codelineno-30-16" name="__codelineno-30-16" href="#__codelineno-30-16"></a>      if (length(personal_token) == 0 || personal_token == &quot;&quot;) {    # se não achar, ou estiver vazio
+</span><span id="__span-30-17"><a id="__codelineno-30-17" name="__codelineno-30-17" href="#__codelineno-30-17"></a>        personal_token &lt;- &quot;&quot;
+</span><span id="__span-30-18"><a id="__codelineno-30-18" name="__codelineno-30-18" href="#__codelineno-30-18"></a>        message(&quot;Arquivo de token está vazio.&quot;)    # avisa que o arquivo está vazio
+</span><span id="__span-30-19"><a id="__codelineno-30-19" name="__codelineno-30-19" href="#__codelineno-30-19"></a>      }
+</span><span id="__span-30-20"><a id="__codelineno-30-20" name="__codelineno-30-20" href="#__codelineno-30-20"></a>    } else {    # demais casos
+</span><span id="__span-30-21"><a id="__codelineno-30-21" name="__codelineno-30-21" href="#__codelineno-30-21"></a>      personal_token &lt;- &quot;&quot;
+</span><span id="__span-30-22"><a id="__codelineno-30-22" name="__codelineno-30-22" href="#__codelineno-30-22"></a>      message(&quot;Sem acesso aos repositórios do github: token indefinido.&quot;)    # avisa que não conseguiu acessar o token
+</span><span id="__span-30-23"><a id="__codelineno-30-23" name="__codelineno-30-23" href="#__codelineno-30-23"></a>    }
+</span><span id="__span-30-24"><a id="__codelineno-30-24" name="__codelineno-30-24" href="#__codelineno-30-24"></a>  }
+</span><span id="__span-30-25"><a id="__codelineno-30-25" name="__codelineno-30-25" href="#__codelineno-30-25"></a>
+</span><span id="__span-30-26"><a id="__codelineno-30-26" name="__codelineno-30-26" href="#__codelineno-30-26"></a>  # Obs.: os valores &quot;pkg&quot;, &quot;version&quot; e &quot;remote&quot; devem ser especificados ao utilizar a função
+</span><span id="__span-30-27"><a id="__codelineno-30-27" name="__codelineno-30-27" href="#__codelineno-30-27"></a>  switch(remote,    # escolhe o instalador confome &quot;remote&quot;
+</span><span id="__span-30-28"><a id="__codelineno-30-28" name="__codelineno-30-28" href="#__codelineno-30-28"></a>         cran = remotes::install_version(pkg, version = version),    # se remote = &quot;cran&quot;, instala a versão do pacote especificados
+</span><span id="__span-30-29"><a id="__codelineno-30-29" name="__codelineno-30-29" href="#__codelineno-30-29"></a>         bitbucket = devtools::install_bitbucket(repo = paste0(&quot;dcgf/&quot;, pkg),    # se remote = bitbucket, especifica o repositório &quot;username/repo&quot;
+</span><span id="__span-30-30"><a id="__codelineno-30-30" name="__codelineno-30-30" href="#__codelineno-30-30"></a>                                                 ref = paste0(&quot;v&quot;, version),    # referência ao git (commit, tag, branch...)
+</span><span id="__span-30-31"><a id="__codelineno-30-31" name="__codelineno-30-31" href="#__codelineno-30-31"></a>                                                 auth_user = &quot;dcgf-admin&quot;,    # usuário, caso o pacote esteja hospedado em repositório privado
+</span><span id="__span-30-32"><a id="__codelineno-30-32" name="__codelineno-30-32" href="#__codelineno-30-32"></a>                                                 password = &quot;FY9AnQkMVrRFW7aJUqt5&quot;,    # senha
+</span><span id="__span-30-33"><a id="__codelineno-30-33" name="__codelineno-30-33" href="#__codelineno-30-33"></a>                                                 upgrade = &quot;never&quot;,    # não encontrei esse argumento
+</span><span id="__span-30-34"><a id="__codelineno-30-34" name="__codelineno-30-34" href="#__codelineno-30-34"></a>                                                 ask = FALSE ),    # não encontrei esse argumento
+</span><span id="__span-30-35"><a id="__codelineno-30-35" name="__codelineno-30-35" href="#__codelineno-30-35"></a>         github = devtools::install_github(repo = paste0(&quot;splor-mg/&quot;, pkg),    # se remote = github, especifica o repositório &quot;username/repo&quot;
+</span><span id="__span-30-36"><a id="__codelineno-30-36" name="__codelineno-30-36" href="#__codelineno-30-36"></a>                                                  ref = paste0(&quot;v&quot;, version),    # referência ao git (commit, tag, branch...)
+</span><span id="__span-30-37"><a id="__codelineno-30-37" name="__codelineno-30-37" href="#__codelineno-30-37"></a>                                                  auth_token = personal_token),    # token pessoal, para acessar repositório privado
+</span><span id="__span-30-38"><a id="__codelineno-30-38" name="__codelineno-30-38" href="#__codelineno-30-38"></a>         stop(&quot;Não é possível instalar o pacote do remote especificado.&quot;))    # interrompe a execução
+</span><span id="__span-30-39"><a id="__codelineno-30-39" name="__codelineno-30-39" href="#__codelineno-30-39"></a>}
 </span></code></pre></div>
 </details>
+</details>
+<details class="note">
+<summary>need_update()</summary>
+<p>A função retorna "TRUE" se o pacote não estiver instalado ou se a versão instalada for diferente da versão especificada. Caso contrário, retorna "FALSE". Ou seja, ela responde se o pacote precisa ser instalado/atualizado.</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-31-1"><a id="__codelineno-31-1" name="__codelineno-31-1" href="#__codelineno-31-1"></a>need_update &lt;- function(pkg, version) {
+</span><span id="__span-31-2"><a id="__codelineno-31-2" name="__codelineno-31-2" href="#__codelineno-31-2"></a>  if(!is_pkg_installed(pkg)) {    # checa se o &quot;pkg&quot; está instalado (TRUE ou FALSE)
+</span><span id="__span-31-3"><a id="__codelineno-31-3" name="__codelineno-31-3" href="#__codelineno-31-3"></a>    return(TRUE)    # se não estiver instalado, a função retorna TRUE
+</span><span id="__span-31-4"><a id="__codelineno-31-4" name="__codelineno-31-4" href="#__codelineno-31-4"></a>  } else {    # caso contrário
+</span><span id="__span-31-5"><a id="__codelineno-31-5" name="__codelineno-31-5" href="#__codelineno-31-5"></a>    return(package_version(version) != packageVersion(pkg))    # compara se a versão do &quot;version&quot; está diferente da versão instalada do &quot;pkg&quot;
+</span><span id="__span-31-6"><a id="__codelineno-31-6" name="__codelineno-31-6" href="#__codelineno-31-6"></a>  }                                                            # retorna TRUE, se não forem iguais, e FALSE, se forem iguais
+</span><span id="__span-31-7"><a id="__codelineno-31-7" name="__codelineno-31-7" href="#__codelineno-31-7"></a>}
+</span></code></pre></div>
+<details class="note">
+<summary>is_pkg_installed()</summary>
+<p>Verifica se o "pkg" está instalado e retorna "TRUE", se estiver instalado, ou "FALSE", caso contrário.</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-32-1"><a id="__codelineno-32-1" name="__codelineno-32-1" href="#__codelineno-32-1"></a>is_pkg_installed &lt;- function(pkg) {
+</span><span id="__span-32-2"><a id="__codelineno-32-2" name="__codelineno-32-2" href="#__codelineno-32-2"></a>  is_installed &lt;- tryCatch(find.package(pkg),    # retorna o caminho de instalação do &quot;pkg&quot;, caso exista
+</span><span id="__span-32-3"><a id="__codelineno-32-3" name="__codelineno-32-3" href="#__codelineno-32-3"></a>                           error = function(e) {    # se não existir,
+</span><span id="__span-32-4"><a id="__codelineno-32-4" name="__codelineno-32-4" href="#__codelineno-32-4"></a>                              return(NULL)    # retorna NULL
+</span><span id="__span-32-5"><a id="__codelineno-32-5" name="__codelineno-32-5" href="#__codelineno-32-5"></a>                           })
+</span><span id="__span-32-6"><a id="__codelineno-32-6" name="__codelineno-32-6" href="#__codelineno-32-6"></a>
+</span><span id="__span-32-7"><a id="__codelineno-32-7" name="__codelineno-32-7" href="#__codelineno-32-7"></a>  is_installed &lt;- ifelse(is.null(is_installed), FALSE, TRUE)    # converte o caminho em &quot;TRUE&quot; e o &quot;NULL&quot; em &quot;FALSE&quot;
+</span><span id="__span-32-8"><a id="__codelineno-32-8" name="__codelineno-32-8" href="#__codelineno-32-8"></a>}
+</span></code></pre></div>
+</details>
+</details>
+<details class="note">
+<summary>user_auth()</summary>
+<p>Pergunta se o usuário quer instalar ou atualizar o "pkg", retornando TRUE ou FALSE.</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-33-1"><a id="__codelineno-33-1" name="__codelineno-33-1" href="#__codelineno-33-1"></a>user_auth &lt;- function(pkg, required_version) {
+</span><span id="__span-33-2"><a id="__codelineno-33-2" name="__codelineno-33-2" href="#__codelineno-33-2"></a>
+</span><span id="__span-33-3"><a id="__codelineno-33-3" name="__codelineno-33-3" href="#__codelineno-33-3"></a>  if(is_pkg_installed(pkg)) {    # se o &quot;pkg&quot; estiver instalado
+</span><span id="__span-33-4"><a id="__codelineno-33-4" name="__codelineno-33-4" href="#__codelineno-33-4"></a>
+</span><span id="__span-33-5"><a id="__codelineno-33-5" name="__codelineno-33-5" href="#__codelineno-33-5"></a>    # pergunta se o usuário quer atualizar
+</span><span id="__span-33-6"><a id="__codelineno-33-6" name="__codelineno-33-6" href="#__codelineno-33-6"></a>    msg &lt;- paste0(&quot;  Sua versão do pacote &quot;, pkg, &quot; é &quot;, packageVersion(pkg),
+</span><span id="__span-33-7"><a id="__codelineno-33-7" name="__codelineno-33-7" href="#__codelineno-33-7"></a>                  &quot;\n  A versão exigida é &quot;, required_version,
+</span><span id="__span-33-8"><a id="__codelineno-33-8" name="__codelineno-33-8" href="#__codelineno-33-8"></a>                  &quot;\n  Deseja instalar? (s/n) &quot;)
+</span><span id="__span-33-9"><a id="__codelineno-33-9" name="__codelineno-33-9" href="#__codelineno-33-9"></a>    cat(msg)
+</span><span id="__span-33-10"><a id="__codelineno-33-10" name="__codelineno-33-10" href="#__codelineno-33-10"></a>
+</span><span id="__span-33-11"><a id="__codelineno-33-11" name="__codelineno-33-11" href="#__codelineno-33-11"></a>  } else {    # se o &quot;pkg&quot; não estiver instalado
+</span><span id="__span-33-12"><a id="__codelineno-33-12" name="__codelineno-33-12" href="#__codelineno-33-12"></a>
+</span><span id="__span-33-13"><a id="__codelineno-33-13" name="__codelineno-33-13" href="#__codelineno-33-13"></a>    # pergunta se o usuário quer instalar
+</span><span id="__span-33-14"><a id="__codelineno-33-14" name="__codelineno-33-14" href="#__codelineno-33-14"></a>    msg2 &lt;- paste0(&quot;  O pacote &quot;, pkg, &quot; não está instalado. \n
+</span><span id="__span-33-15"><a id="__codelineno-33-15" name="__codelineno-33-15" href="#__codelineno-33-15"></a>                   Deseja instalar? (s/n) &quot; )
+</span><span id="__span-33-16"><a id="__codelineno-33-16" name="__codelineno-33-16" href="#__codelineno-33-16"></a>    cat(msg2)
+</span><span id="__span-33-17"><a id="__codelineno-33-17" name="__codelineno-33-17" href="#__codelineno-33-17"></a>  }
+</span><span id="__span-33-18"><a id="__codelineno-33-18" name="__codelineno-33-18" href="#__codelineno-33-18"></a>
+</span><span id="__span-33-19"><a id="__codelineno-33-19" name="__codelineno-33-19" href="#__codelineno-33-19"></a>  # lê a resposta e converte para minúsculas
+</span><span id="__span-33-20"><a id="__codelineno-33-20" name="__codelineno-33-20" href="#__codelineno-33-20"></a>  user_input &lt;- tolower(readLines(con=&quot;stdin&quot;, 1))
+</span><span id="__span-33-21"><a id="__codelineno-33-21" name="__codelineno-33-21" href="#__codelineno-33-21"></a>
+</span><span id="__span-33-22"><a id="__codelineno-33-22" name="__codelineno-33-22" href="#__codelineno-33-22"></a>  # converte &quot;s&quot; para TRUE e &quot;n&quot; para FALSE
+</span><span id="__span-33-23"><a id="__codelineno-33-23" name="__codelineno-33-23" href="#__codelineno-33-23"></a>  ifelse(user_input == &quot;s&quot;, TRUE, FALSE)
+</span><span id="__span-33-24"><a id="__codelineno-33-24" name="__codelineno-33-24" href="#__codelineno-33-24"></a>}
+</span></code></pre></div>
+</details>
+</details>
+</details>
+</li>
+<li>
+<p><strong>data/metadados.csv</strong>: gera/atualiza o arquivo "data/metadados.csv" com o conteúdo "metadados" das planilhas "data-raw/exec_*.xlsx"</p>
+<details class="note">
+<summary>data/metadados.csv</summary>
+<p>Quando qualquer um dos pré-requisitos for mais novo, roda o script R "config/R/metadados.R" para gerar ou atualizar o "data/metadados.csv".</p>
+<p>O script R gera um arquivo .csv com o conteúdo "metadados" das planilhas "data-raw/exec_*.xlsx".</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-34-1"><a id="__codelineno-34-1" name="__codelineno-34-1" href="#__codelineno-34-1"></a>data/metadados.csv: config/R/metadados.R $(EXEC_FILES) $(CONFIG) $(LIB)
+</span><span id="__span-34-2"><a id="__codelineno-34-2" name="__codelineno-34-2" href="#__codelineno-34-2"></a>  @echo &quot;Atualizando metadados...&quot;
+</span><span id="__span-34-3"><a id="__codelineno-34-3" name="__codelineno-34-3" href="#__codelineno-34-3"></a>  @Rscript --verbose $&lt; 2&gt; logs/log.Rout    # executa a primeira dependência (&quot;config/R/metadados.R&quot;)
+</span></code></pre></div>
+<details class="note">
+<summary>config/R/metadados.R</summary>
+<p>Cria um único arquivo .csv com o data frame da aba "metadados" de cada planilha excel "exec_*" que consta em "data-raw".</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-35-1"><a id="__codelineno-35-1" name="__codelineno-35-1" href="#__codelineno-35-1"></a>config &lt;- yaml::yaml.load_file(&quot;config/config.yaml&quot;)    # lê o arquivo &quot;config.yaml&quot;
+</span><span id="__span-35-2"><a id="__codelineno-35-2" name="__codelineno-35-2" href="#__codelineno-35-2"></a>stem &lt;- names(config$munge_base)[as.logical(config$munge_base)]    # lista os nomes com &quot;yes&quot; no &quot;munge_base&quot;
+</span><span id="__span-35-3"><a id="__codelineno-35-3" name="__codelineno-35-3" href="#__codelineno-35-3"></a>stem &lt;- stem[grepl(&quot;^exec_&quot;, stem)]    # pesquisa quem começa com &quot;exec_&quot; na lista do &quot;munge_base&quot; com &quot;yes&quot;
+</span><span id="__span-35-4"><a id="__codelineno-35-4" name="__codelineno-35-4" href="#__codelineno-35-4"></a>
+</span><span id="__span-35-5"><a id="__codelineno-35-5" name="__codelineno-35-5" href="#__codelineno-35-5"></a>if(length(stem) &gt; 0) {    # se houver &quot;munge_base&quot; com &quot;yes&quot;
+</span><span id="__span-35-6"><a id="__codelineno-35-6" name="__codelineno-35-6" href="#__codelineno-35-6"></a>  files &lt;- paste0(&quot;data-raw/&quot;, stem, &quot;.xlsx&quot;)    # concatena &quot;data-raw/stem.xlsx&quot; (ex.: &quot;data-raw/exec_rec.xlsx&quot;)
+</span><span id="__span-35-7"><a id="__codelineno-35-7" name="__codelineno-35-7" href="#__codelineno-35-7"></a>  metadados &lt;- Map(readxl::read_excel, files, &quot;metadados&quot;)    # retorna uma lista de data frames com os valores lidos da aba &quot;metadados&quot; de cada planilha
+</span><span id="__span-35-8"><a id="__codelineno-35-8" name="__codelineno-35-8" href="#__codelineno-35-8"></a>  metadados &lt;- Reduce(rbind, metadados)    # transforma em um único data frame (deixa de ser uma lista)
+</span><span id="__span-35-9"><a id="__codelineno-35-9" name="__codelineno-35-9" href="#__codelineno-35-9"></a>  metadados &lt;- metadados[!is.na(metadados$BASE),]    # remove linhas onde a coluna &quot;BASE&quot; está vazia
+</span><span id="__span-35-10"><a id="__codelineno-35-10" name="__codelineno-35-10" href="#__codelineno-35-10"></a>} else {    # se não houver
+</span><span id="__span-35-11"><a id="__codelineno-35-11" name="__codelineno-35-11" href="#__codelineno-35-11"></a>  metadados &lt;- data.frame(BASE = &quot;Não existem bases da execução orçamentária&quot;)    # cria um data frame &quot;BASE&quot;, em que o valor é a string
+</span><span id="__span-35-12"><a id="__codelineno-35-12" name="__codelineno-35-12" href="#__codelineno-35-12"></a>}
+</span><span id="__span-35-13"><a id="__codelineno-35-13" name="__codelineno-35-13" href="#__codelineno-35-13"></a>
+</span><span id="__span-35-14"><a id="__codelineno-35-14" name="__codelineno-35-14" href="#__codelineno-35-14"></a>relatorios::exporta_csv(metadados, file = &quot;data/metadados.csv&quot;, row.names = FALSE)    # exporta &quot;metadados.csv&quot; para a pasta &quot;data&quot;
+</span></code></pre></div>
+<details class="note">
+<summary>exporta_csv()</summary>
+<p>Utiliza a função "fwrite()" do pacote "data.table" para exportar o arquivo .csv, considerando o separador ";" e o decimal ",", além de desabilitar a notação científica.</p>
+<p>Entretanto, o que será exportado, seu nome e outras configurações são dadas no argumento do "exporta_csv()".</p>
+<p>Obs.: "scipen" controla quando o R decide usar notação científica.</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-36-1"><a id="__codelineno-36-1" name="__codelineno-36-1" href="#__codelineno-36-1"></a>exporta_csv &lt;- function(...) {
+</span><span id="__span-36-2"><a id="__codelineno-36-2" name="__codelineno-36-2" href="#__codelineno-36-2"></a>  old_scipen &lt;- getOption(&quot;scipen&quot;)    # salva o valor atual de scipen do R
+</span><span id="__span-36-3"><a id="__codelineno-36-3" name="__codelineno-36-3" href="#__codelineno-36-3"></a>  options(scipen = 999)    # desabilita praticamente toda notação científica
+</span><span id="__span-36-4"><a id="__codelineno-36-4" name="__codelineno-36-4" href="#__codelineno-36-4"></a>  data.table::fwrite(..., sep = &quot;;&quot;, dec = &quot;,&quot;)    # exporta usando separador &quot;;&quot; e decimal &quot;,&quot;
+</span><span id="__span-36-5"><a id="__codelineno-36-5" name="__codelineno-36-5" href="#__codelineno-36-5"></a>  on.exit(options(scipen = old_scipen))    # mesmo se der erro, o valor anterior de scipen é restaurado, então não altera permanentemente as opções globais do R
+</span><span id="__span-36-6"><a id="__codelineno-36-6" name="__codelineno-36-6" href="#__codelineno-36-6"></a>}
+</span></code></pre></div>
+</details>
+</details>
+</details>
+</li>
+<li>
+<p><strong>data/testes.csv</strong>:</p>
+<details class="note">
+<summary>data/testes.csv</summary>
+<p>Quando qualquer um dos pré-requisitos for mais novo, roda o script R "tests/test.R" para gerar ou atualizar o "data/testes.csv".</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-37-1"><a id="__codelineno-37-1" name="__codelineno-37-1" href="#__codelineno-37-1"></a>data/testes.csv: tests/test.R $(TEST_FILES) $(MUNGE_FILES) $(CONFIG) $(LIB)
+</span><span id="__span-37-2"><a id="__codelineno-37-2" name="__codelineno-37-2" href="#__codelineno-37-2"></a>  @echo &quot;Atualizando testes...&quot;
+</span><span id="__span-37-3"><a id="__codelineno-37-3" name="__codelineno-37-3" href="#__codelineno-37-3"></a>  @Rscript --verbose $&lt; 2&gt; logs/log.Rout
+</span></code></pre></div>
+<details class="note">
+<summary>tests/test.R</summary>
+<p>Obs.: os arquivos "helper_test_equal" e "helper_test_greater" possuem uma função ("test_equal()" e "test_greater_than()") que cria um data frame com os resultados do teste e empilha este data frame dentro da lista "resultado_testes".</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-38-1"><a id="__codelineno-38-1" name="__codelineno-38-1" href="#__codelineno-38-1"></a>config &lt;- yaml::yaml.load_file(&quot;config/config.yaml&quot;)    # lê o arquivo &quot;config.yaml&quot;
+</span><span id="__span-38-2"><a id="__codelineno-38-2" name="__codelineno-38-2" href="#__codelineno-38-2"></a>
+</span><span id="__span-38-3"><a id="__codelineno-38-3" name="__codelineno-38-3" href="#__codelineno-38-3"></a>if(config$test$run_tests == TRUE) {    # se a subchave &quot;run_tests&quot; estiver como &quot;yes&quot;
+</span><span id="__span-38-4"><a id="__codelineno-38-4" name="__codelineno-38-4" href="#__codelineno-38-4"></a>  resultado_testes &lt;- list() # cria uma lista que os scripts de teste irão preencher
+</span><span id="__span-38-5"><a id="__codelineno-38-5" name="__codelineno-38-5" href="#__codelineno-38-5"></a>
+</span><span id="__span-38-6"><a id="__codelineno-38-6" name="__codelineno-38-6" href="#__codelineno-38-6"></a>  helper_files &lt;- list.files(&quot;tests/test/&quot;, pattern = &quot;^helper_&quot;)    # lista os arquivos que começam com &quot;helper_&quot; na pasta &quot;tests/test/&quot;
+</span><span id="__span-38-7"><a id="__codelineno-38-7" name="__codelineno-38-7" href="#__codelineno-38-7"></a>  helper_paths &lt;- paste0(&quot;tests/test/&quot;, helper_files)    # escreve o caminho desses arquivos
+</span><span id="__span-38-8"><a id="__codelineno-38-8" name="__codelineno-38-8" href="#__codelineno-38-8"></a>  invisible(Map(source, helper_paths, encoding = &quot;UTF-8&quot;))    # dá &quot;source()&quot; em cada helper
+</span><span id="__span-38-9"><a id="__codelineno-38-9" name="__codelineno-38-9" href="#__codelineno-38-9"></a>
+</span><span id="__span-38-10"><a id="__codelineno-38-10" name="__codelineno-38-10" href="#__codelineno-38-10"></a>  stem &lt;- names(config$test$tests)[as.logical(config$test$tests)]    # filtra as bases marcadas como ativas do &quot;test: tests:&quot;
+</span><span id="__span-38-11"><a id="__codelineno-38-11" name="__codelineno-38-11" href="#__codelineno-38-11"></a>  stem &lt;- c(config$test$base, stem)    # adiciona &quot;reest&quot; na lista de nomes (pois &quot;base: reest&quot;)
+</span><span id="__span-38-12"><a id="__codelineno-38-12" name="__codelineno-38-12" href="#__codelineno-38-12"></a>  files &lt;- paste0(&quot;tests/test/test_&quot;, stem, &quot;.R&quot;)    # escreve o caminho desses arquivos .R
+</span><span id="__span-38-13"><a id="__codelineno-38-13" name="__codelineno-38-13" href="#__codelineno-38-13"></a>  invisible(Map(source, files, encoding = &quot;UTF-8&quot;))    # dá &quot;source()&quot; em cada &quot;test_*.R&quot; ativado
+</span><span id="__span-38-14"><a id="__codelineno-38-14" name="__codelineno-38-14" href="#__codelineno-38-14"></a>
+</span><span id="__span-38-15"><a id="__codelineno-38-15" name="__codelineno-38-15" href="#__codelineno-38-15"></a>  output &lt;- data.table::rbindlist(resultado_testes, fill = TRUE)    # empilha as entradas da lista &quot;resultado_testes&quot; em um único data.frame
+</span><span id="__span-38-16"><a id="__codelineno-38-16" name="__codelineno-38-16" href="#__codelineno-38-16"></a>
+</span><span id="__span-38-17"><a id="__codelineno-38-17" name="__codelineno-38-17" href="#__codelineno-38-17"></a>} else {    # se a subchave &quot;run_tests&quot; estiver como &quot;no&quot;
+</span><span id="__span-38-18"><a id="__codelineno-38-18" name="__codelineno-38-18" href="#__codelineno-38-18"></a>  output &lt;- data.frame(CONTEXTO = &quot;Os testes estao configurados para nao serem executados&quot;)    # cria um data frame &quot;CONTEXTO&quot;, em que o valor é a string
+</span><span id="__span-38-19"><a id="__codelineno-38-19" name="__codelineno-38-19" href="#__codelineno-38-19"></a>}
+</span><span id="__span-38-20"><a id="__codelineno-38-20" name="__codelineno-38-20" href="#__codelineno-38-20"></a>
+</span><span id="__span-38-21"><a id="__codelineno-38-21" name="__codelineno-38-21" href="#__codelineno-38-21"></a>write.csv2(output, file = &quot;data/testes.csv&quot;, row.names = F, na = &quot;&quot;, fileEncoding = &quot;UTF-8&quot;)    # escreve &quot;data/testes.csv&quot; com os resultados dos &quot;helper_*.R&quot; e &quot;test_*.R&quot;
+</span></code></pre></div>
+</details>
+</details>
+</li>
+<li>
+<p><strong>code/qvw/load_bases.qvs</strong>:</p>
+<details class="note">
+<summary>code/qvw/load_bases.qvs</summary>
+<p>Quando qualquer um dos pré-requisitos for mais novo, roda o script R "config/R/load_bases.R" para gerar ou atualizar o "code/qvw/load_bases.qvs".</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-39-1"><a id="__codelineno-39-1" name="__codelineno-39-1" href="#__codelineno-39-1"></a>code/qvw/load_bases.qvs: config/R/load_bases.R $(CONFIG)
+</span><span id="__span-39-2"><a id="__codelineno-39-2" name="__codelineno-39-2" href="#__codelineno-39-2"></a>  @echo &quot;Atualizando load_bases...&quot;
+</span><span id="__span-39-3"><a id="__codelineno-39-3" name="__codelineno-39-3" href="#__codelineno-39-3"></a>  @Rscript --verbose $&lt; 2&gt; logs/log.Rout
+</span></code></pre></div>
+<details class="note">
+<summary>config/R/load_bases.R</summary>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-40-1"><a id="__codelineno-40-1" name="__codelineno-40-1" href="#__codelineno-40-1"></a>config &lt;- yaml::yaml.load_file(&quot;config/config.yaml&quot;)
+</span><span id="__span-40-2"><a id="__codelineno-40-2" name="__codelineno-40-2" href="#__codelineno-40-2"></a>stem &lt;- names(config$munge_base)[as.logical(config$munge_base)]
+</span><span id="__span-40-3"><a id="__codelineno-40-3" name="__codelineno-40-3" href="#__codelineno-40-3"></a>
+</span><span id="__span-40-4"><a id="__codelineno-40-4" name="__codelineno-40-4" href="#__codelineno-40-4"></a>msg_prefix &lt;- &quot;  LOAD *\n  FROM\n  data\\&quot;
+</span><span id="__span-40-5"><a id="__codelineno-40-5" name="__codelineno-40-5" href="#__codelineno-40-5"></a>
+</span><span id="__span-40-6"><a id="__codelineno-40-6" name="__codelineno-40-6" href="#__codelineno-40-6"></a>msg_suffix &lt;- &quot;.csv\n
+</span><span id="__span-40-7"><a id="__codelineno-40-7" name="__codelineno-40-7" href="#__codelineno-40-7"></a>  (txt, utf8, embedded labels, delimiter is &#39;;&#39;, msq);
+</span><span id="__span-40-8"><a id="__codelineno-40-8" name="__codelineno-40-8" href="#__codelineno-40-8"></a>  \n  CONCATENATE\n\n&quot;
+</span><span id="__span-40-9"><a id="__codelineno-40-9" name="__codelineno-40-9" href="#__codelineno-40-9"></a>
+</span><span id="__span-40-10"><a id="__codelineno-40-10" name="__codelineno-40-10" href="#__codelineno-40-10"></a>output &lt;- paste0(msg_prefix, stem, msg_suffix)
+</span><span id="__span-40-11"><a id="__codelineno-40-11" name="__codelineno-40-11" href="#__codelineno-40-11"></a>
+</span><span id="__span-40-12"><a id="__codelineno-40-12" name="__codelineno-40-12" href="#__codelineno-40-12"></a>output[length(output)] &lt;- gsub(&quot;CONCATENATE&quot;, &quot;&quot;, output[length(output)])
+</span><span id="__span-40-13"><a id="__codelineno-40-13" name="__codelineno-40-13" href="#__codelineno-40-13"></a>
+</span><span id="__span-40-14"><a id="__codelineno-40-14" name="__codelineno-40-14" href="#__codelineno-40-14"></a>write(output, file = &quot;code/qvw/load_bases.qvs&quot;)
+</span></code></pre></div>
 </details>
 </details>
 </li>
