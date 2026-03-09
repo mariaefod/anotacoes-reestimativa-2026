@@ -982,7 +982,7 @@
 </span></code></pre></div>
 <details class="note">
 <summary>tests/test.R</summary>
-<p>Obs.: os arquivos "helper_test_equal" e "helper_test_greater" possuem uma função ("test_equal()" e "test_greater_than()") que cria um data frame com os resultados do teste e empilha este data frame dentro da lista "resultado_testes".</p>
+<p>Obs.: os arquivos "helper_test_equal.R" e "helper_test_greater.R" possuem uma função ("test_equal()" e "test_greater_than()") que cria um data frame com os resultados do teste e empilha este data frame dentro da lista "resultado_testes".</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-38-1"><a id="__codelineno-38-1" name="__codelineno-38-1" href="#__codelineno-38-1"></a>config &lt;- yaml::yaml.load_file(&quot;config/config.yaml&quot;)    # lê o arquivo &quot;config.yaml&quot;
 </span><span id="__span-38-2"><a id="__codelineno-38-2" name="__codelineno-38-2" href="#__codelineno-38-2"></a>
 </span><span id="__span-38-3"><a id="__codelineno-38-3" name="__codelineno-38-3" href="#__codelineno-38-3"></a>if(config$test$run_tests == TRUE) {    # se a subchave &quot;run_tests&quot; estiver como &quot;yes&quot;
@@ -990,12 +990,12 @@
 </span><span id="__span-38-5"><a id="__codelineno-38-5" name="__codelineno-38-5" href="#__codelineno-38-5"></a>
 </span><span id="__span-38-6"><a id="__codelineno-38-6" name="__codelineno-38-6" href="#__codelineno-38-6"></a>  helper_files &lt;- list.files(&quot;tests/test/&quot;, pattern = &quot;^helper_&quot;)    # lista os arquivos que começam com &quot;helper_&quot; na pasta &quot;tests/test/&quot;
 </span><span id="__span-38-7"><a id="__codelineno-38-7" name="__codelineno-38-7" href="#__codelineno-38-7"></a>  helper_paths &lt;- paste0(&quot;tests/test/&quot;, helper_files)    # escreve o caminho desses arquivos
-</span><span id="__span-38-8"><a id="__codelineno-38-8" name="__codelineno-38-8" href="#__codelineno-38-8"></a>  invisible(Map(source, helper_paths, encoding = &quot;UTF-8&quot;))    # dá &quot;source()&quot; em cada helper
+</span><span id="__span-38-8"><a id="__codelineno-38-8" name="__codelineno-38-8" href="#__codelineno-38-8"></a>  invisible(Map(source, helper_paths, encoding = &quot;UTF-8&quot;))    # dá &quot;source()&quot; em cada helper (executa os arquivos)
 </span><span id="__span-38-9"><a id="__codelineno-38-9" name="__codelineno-38-9" href="#__codelineno-38-9"></a>
 </span><span id="__span-38-10"><a id="__codelineno-38-10" name="__codelineno-38-10" href="#__codelineno-38-10"></a>  stem &lt;- names(config$test$tests)[as.logical(config$test$tests)]    # filtra as bases marcadas como ativas do &quot;test: tests:&quot;
 </span><span id="__span-38-11"><a id="__codelineno-38-11" name="__codelineno-38-11" href="#__codelineno-38-11"></a>  stem &lt;- c(config$test$base, stem)    # adiciona &quot;reest&quot; na lista de nomes (pois &quot;base: reest&quot;)
 </span><span id="__span-38-12"><a id="__codelineno-38-12" name="__codelineno-38-12" href="#__codelineno-38-12"></a>  files &lt;- paste0(&quot;tests/test/test_&quot;, stem, &quot;.R&quot;)    # escreve o caminho desses arquivos .R
-</span><span id="__span-38-13"><a id="__codelineno-38-13" name="__codelineno-38-13" href="#__codelineno-38-13"></a>  invisible(Map(source, files, encoding = &quot;UTF-8&quot;))    # dá &quot;source()&quot; em cada &quot;test_*.R&quot; ativado
+</span><span id="__span-38-13"><a id="__codelineno-38-13" name="__codelineno-38-13" href="#__codelineno-38-13"></a>  invisible(Map(source, files, encoding = &quot;UTF-8&quot;))    # dá &quot;source()&quot; em cada &quot;test_*.R&quot; ativado (executa os arquivos)
 </span><span id="__span-38-14"><a id="__codelineno-38-14" name="__codelineno-38-14" href="#__codelineno-38-14"></a>
 </span><span id="__span-38-15"><a id="__codelineno-38-15" name="__codelineno-38-15" href="#__codelineno-38-15"></a>  output &lt;- data.table::rbindlist(resultado_testes, fill = TRUE)    # empilha as entradas da lista &quot;resultado_testes&quot; em um único data.frame
 </span><span id="__span-38-16"><a id="__codelineno-38-16" name="__codelineno-38-16" href="#__codelineno-38-16"></a>
@@ -1005,6 +1005,526 @@
 </span><span id="__span-38-20"><a id="__codelineno-38-20" name="__codelineno-38-20" href="#__codelineno-38-20"></a>
 </span><span id="__span-38-21"><a id="__codelineno-38-21" name="__codelineno-38-21" href="#__codelineno-38-21"></a>write.csv2(output, file = &quot;data/testes.csv&quot;, row.names = F, na = &quot;&quot;, fileEncoding = &quot;UTF-8&quot;)    # escreve &quot;data/testes.csv&quot; com os resultados dos &quot;helper_*.R&quot; e &quot;test_*.R&quot;
 </span></code></pre></div>
+<details class="note">
+<summary>helper_dados.R</summary>
+<p>Cria as tabelas "rec" e "desp" no ambiente "base".</p>
+<p>Essas tabelas são criadas considerando o valor da subchave "test: base:".</p>
+<p>Por exemplo, caso seja "reest", irá procurar na pasta "data/" os arquivos "reest_rec.csv" e "reest_desp.csv.</p>
+<p>Assim, irá criar duas data.tables com o conteúdos desses .csv.</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-39-1"><a id="__codelineno-39-1" name="__codelineno-39-1" href="#__codelineno-39-1"></a>library(reest)
+</span><span id="__span-39-2"><a id="__codelineno-39-2" name="__codelineno-39-2" href="#__codelineno-39-2"></a>
+</span><span id="__span-39-3"><a id="__codelineno-39-3" name="__codelineno-39-3" href="#__codelineno-39-3"></a>config &lt;- yaml::yaml.load_file(&quot;config/config.yaml&quot;)    # lê o arquivo &quot;config.yaml&quot;
+</span><span id="__span-39-4"><a id="__codelineno-39-4" name="__codelineno-39-4" href="#__codelineno-39-4"></a>base &lt;- new.env()    # cria um novo ambiente usado para armazenar duas tabelas padronizadas (&quot;rec&quot; e &quot;desp&quot;)
+</span><span id="__span-39-5"><a id="__codelineno-39-5" name="__codelineno-39-5" href="#__codelineno-39-5"></a>
+</span><span id="__span-39-6"><a id="__codelineno-39-6" name="__codelineno-39-6" href="#__codelineno-39-6"></a>run_dados_exec &lt;- function() {
+</span><span id="__span-39-7"><a id="__codelineno-39-7" name="__codelineno-39-7" href="#__codelineno-39-7"></a>  assign(&quot;rec&quot;, ler_exec_rec(&quot;data/exec_rec.csv&quot;), envir = base)    # lê o &quot;exec_rec.csv&quot; como data.table, renomeando as colunas, e atribui em base$rec
+</span><span id="__span-39-8"><a id="__codelineno-39-8" name="__codelineno-39-8" href="#__codelineno-39-8"></a>  data.table::setnames(base$rec, &quot;VL_EFET_AJUST&quot;, &quot;VL_REC&quot;)    # renomeia VL_EFET_AJUST → VL_REC
+</span><span id="__span-39-9"><a id="__codelineno-39-9" name="__codelineno-39-9" href="#__codelineno-39-9"></a>  assign(&quot;desp&quot;, ler_exec_desp(&quot;data/exec_desp.csv&quot;), envir = base)    # lê o &quot;exec_desp.csv&quot; como data.table, renomeando as colunas, e atribui em base$desp
+</span><span id="__span-39-10"><a id="__codelineno-39-10" name="__codelineno-39-10" href="#__codelineno-39-10"></a>  data.table::setnames(base$desp, &quot;VL_EMP&quot;, &quot;VL_DESP&quot;)    # renomeia VL_EMP → VL_DESP
+</span><span id="__span-39-11"><a id="__codelineno-39-11" name="__codelineno-39-11" href="#__codelineno-39-11"></a>}
+</span><span id="__span-39-12"><a id="__codelineno-39-12" name="__codelineno-39-12" href="#__codelineno-39-12"></a>
+</span><span id="__span-39-13"><a id="__codelineno-39-13" name="__codelineno-39-13" href="#__codelineno-39-13"></a>run_dados_ldo &lt;- function() {
+</span><span id="__span-39-14"><a id="__codelineno-39-14" name="__codelineno-39-14" href="#__codelineno-39-14"></a>  assign(&quot;rec&quot;, ler_reest_rec(&quot;data/ldo_rec.csv&quot;), envir = base)    # lê o &quot;ldo_rec.csv&quot; como data.table e atribui em base$rec
+</span><span id="__span-39-15"><a id="__codelineno-39-15" name="__codelineno-39-15" href="#__codelineno-39-15"></a>  data.table::setnames(base$rec, &quot;VL_LDO_REC&quot;, &quot;VL_REC&quot;)    # renomeia VL_LDO_REC → VL_REC
+</span><span id="__span-39-16"><a id="__codelineno-39-16" name="__codelineno-39-16" href="#__codelineno-39-16"></a>  assign(&quot;desp&quot;, ler_reest_desp(&quot;data/ldo_desp.csv&quot;), envir = base)    # lê o &quot;ldo_desp.csv&quot; como data.table e atribui em base$desp
+</span><span id="__span-39-17"><a id="__codelineno-39-17" name="__codelineno-39-17" href="#__codelineno-39-17"></a>  data.table::setnames(base$desp, &quot;VL_LDO_DESP&quot;, &quot;VL_DESP&quot;)    # renomeia VL_LDO_DESP → VL_DESP
+</span><span id="__span-39-18"><a id="__codelineno-39-18" name="__codelineno-39-18" href="#__codelineno-39-18"></a>}
+</span><span id="__span-39-19"><a id="__codelineno-39-19" name="__codelineno-39-19" href="#__codelineno-39-19"></a>
+</span><span id="__span-39-20"><a id="__codelineno-39-20" name="__codelineno-39-20" href="#__codelineno-39-20"></a>run_dados_loa &lt;- function() {
+</span><span id="__span-39-21"><a id="__codelineno-39-21" name="__codelineno-39-21" href="#__codelineno-39-21"></a>  assign(&quot;rec&quot;, ler_loa_rec(&quot;data/loa_rec.csv&quot;), envir = base)    # lê o &quot;loa_rec.csv&quot; como data.table, renomeando as colunas, e atribui em base$rec
+</span><span id="__span-39-22"><a id="__codelineno-39-22" name="__codelineno-39-22" href="#__codelineno-39-22"></a>  data.table::setnames(base$rec, &quot;VL_LOA_REC&quot;, &quot;VL_REC&quot;)    # renomeia VL_LOA_REC → VL_REC
+</span><span id="__span-39-23"><a id="__codelineno-39-23" name="__codelineno-39-23" href="#__codelineno-39-23"></a>  assign(&quot;desp&quot;, ler_loa_desp(&quot;data/loa_desp.csv&quot;), envir = base)    # lê o &quot;loa_desp.csv&quot; como data.table, renomeando as colunas, e atribui em base$desp
+</span><span id="__span-39-24"><a id="__codelineno-39-24" name="__codelineno-39-24" href="#__codelineno-39-24"></a>  data.table::setnames(base$desp, &quot;VL_LOA_DESP&quot;, &quot;VL_DESP&quot;)    # renomeia VL_LOA_DESP → VL_DESP
+</span><span id="__span-39-25"><a id="__codelineno-39-25" name="__codelineno-39-25" href="#__codelineno-39-25"></a>}
+</span><span id="__span-39-26"><a id="__codelineno-39-26" name="__codelineno-39-26" href="#__codelineno-39-26"></a>
+</span><span id="__span-39-27"><a id="__codelineno-39-27" name="__codelineno-39-27" href="#__codelineno-39-27"></a>run_dados_reest &lt;- function() {
+</span><span id="__span-39-28"><a id="__codelineno-39-28" name="__codelineno-39-28" href="#__codelineno-39-28"></a>  assign(&quot;rec&quot;, ler_reest_rec(&quot;data/reest_rec.csv&quot;), envir = base)    # lê o &quot;reest_rec.csv&quot; como data.table e atribui em base$rec
+</span><span id="__span-39-29"><a id="__codelineno-39-29" name="__codelineno-39-29" href="#__codelineno-39-29"></a>  data.table::setnames(base$rec, &quot;VL_REEST_REC&quot;, &quot;VL_REC&quot;)    # renomeia VL_REEST_REC → VL_REC
+</span><span id="__span-39-30"><a id="__codelineno-39-30" name="__codelineno-39-30" href="#__codelineno-39-30"></a>  assign(&quot;desp&quot;, ler_reest_desp(&quot;data/reest_desp.csv&quot;), envir = base)    # lê o &quot;reest_desp.csv&quot; como data.table e atribui em base$desp
+</span><span id="__span-39-31"><a id="__codelineno-39-31" name="__codelineno-39-31" href="#__codelineno-39-31"></a>  data.table::setnames(base$desp, &quot;VL_REEST_DESP&quot;, &quot;VL_DESP&quot;)    # renomeia VL_REEST_DESP → VL_DESP
+</span><span id="__span-39-32"><a id="__codelineno-39-32" name="__codelineno-39-32" href="#__codelineno-39-32"></a>}
+</span><span id="__span-39-33"><a id="__codelineno-39-33" name="__codelineno-39-33" href="#__codelineno-39-33"></a>
+</span><span id="__span-39-34"><a id="__codelineno-39-34" name="__codelineno-39-34" href="#__codelineno-39-34"></a>config$test$base &lt;- tolower(config$test$base)    # transforma o valor da subchave &quot;base&quot; (no caso, &quot;reest&quot;) em minúsculo
+</span><span id="__span-39-35"><a id="__codelineno-39-35" name="__codelineno-39-35" href="#__codelineno-39-35"></a>stopifnot(config$test$base %in% c(&quot;exec&quot;, &quot;ldo&quot;, &quot;loa&quot;, &quot;reest&quot;))    # se a base não for &quot;exec&quot;, &quot;ldo&quot;, &quot;loa&quot; ou &quot;reest&quot;, dispara erro
+</span><span id="__span-39-36"><a id="__codelineno-39-36" name="__codelineno-39-36" href="#__codelineno-39-36"></a>switch (config$test$base,
+</span><span id="__span-39-37"><a id="__codelineno-39-37" name="__codelineno-39-37" href="#__codelineno-39-37"></a>  &quot;exec&quot; = run_dados_exec(),    # se for &quot;exec&quot;, lê &quot;data/exec_rec.csv&quot; e &quot;data/exec_desp.csv&quot;
+</span><span id="__span-39-38"><a id="__codelineno-39-38" name="__codelineno-39-38" href="#__codelineno-39-38"></a>  &quot;ldo&quot; = run_dados_ldo(),    # se for &quot;ldo&quot;, lê &quot;data/ldo_rec.csv&quot; e &quot;data/ldo_desp.csv&quot;
+</span><span id="__span-39-39"><a id="__codelineno-39-39" name="__codelineno-39-39" href="#__codelineno-39-39"></a>  &quot;loa&quot; = run_dados_loa(),    # se for &quot;loa&quot;, lê &quot;loa_rec.csv&quot; e &quot;loa_desp.csv&quot;
+</span><span id="__span-39-40"><a id="__codelineno-39-40" name="__codelineno-39-40" href="#__codelineno-39-40"></a>  &quot;reest&quot; = run_dados_reest()    # se for &quot;reest&quot;, lê &quot;reest_rec.csv&quot; e &quot;reest_desp.csv&quot;
+</span><span id="__span-39-41"><a id="__codelineno-39-41" name="__codelineno-39-41" href="#__codelineno-39-41"></a>)
+</span><span id="__span-39-42"><a id="__codelineno-39-42" name="__codelineno-39-42" href="#__codelineno-39-42"></a>
+</span><span id="__span-39-43"><a id="__codelineno-39-43" name="__codelineno-39-43" href="#__codelineno-39-43"></a>lockEnvironment(base, bindings = TRUE)    # não permite mais reatribuir base$rec ou base$desp, nem criar/remover objetos nesse ambiente
+</span></code></pre></div>
+<details class="note">
+<summary>ler_exec_rec()</summary>
+<p>Altera nome das colunas e salva como "data.table".</p>
+<p>Só aceita .csv ou .xlsx.</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-40-1"><a id="__codelineno-40-1" name="__codelineno-40-1" href="#__codelineno-40-1"></a>ler_exec_rec &lt;- function(path) {
+</span><span id="__span-40-2"><a id="__codelineno-40-2" name="__codelineno-40-2" href="#__codelineno-40-2"></a>  #browser()
+</span><span id="__span-40-3"><a id="__codelineno-40-3" name="__codelineno-40-3" href="#__codelineno-40-3"></a>  cols &lt;- c(
+</span><span id="__span-40-4"><a id="__codelineno-40-4" name="__codelineno-40-4" href="#__codelineno-40-4"></a>    `Ano de Exercício` = &quot;ANO&quot;,
+</span><span id="__span-40-5"><a id="__codelineno-40-5" name="__codelineno-40-5" href="#__codelineno-40-5"></a>    `Mês - Numérico` = &quot;MES_COD&quot;,
+</span><span id="__span-40-6"><a id="__codelineno-40-6" name="__codelineno-40-6" href="#__codelineno-40-6"></a>    `Unidade Orçamentária - Código` = &quot;UO_COD&quot;,
+</span><span id="__span-40-7"><a id="__codelineno-40-7" name="__codelineno-40-7" href="#__codelineno-40-7"></a>    `Unidade Orçamentária - Sigla` = &quot;UO_SIGLA&quot;,
+</span><span id="__span-40-8"><a id="__codelineno-40-8" name="__codelineno-40-8" href="#__codelineno-40-8"></a>    `Classificação Receita - Código` = &quot;RECEITA_COD&quot;,
+</span><span id="__span-40-9"><a id="__codelineno-40-9" name="__codelineno-40-9" href="#__codelineno-40-9"></a>    `Classificação Receita - Descrição` = &quot;RECEITA_DESC&quot;,
+</span><span id="__span-40-10"><a id="__codelineno-40-10" name="__codelineno-40-10" href="#__codelineno-40-10"></a>    `Fonte Recurso - Código` = &quot;FONTE_COD&quot;,
+</span><span id="__span-40-11"><a id="__codelineno-40-11" name="__codelineno-40-11" href="#__codelineno-40-11"></a>    `Fonte Recurso - Descrição` = &quot;FONTE_DESC&quot;,
+</span><span id="__span-40-12"><a id="__codelineno-40-12" name="__codelineno-40-12" href="#__codelineno-40-12"></a>    `Valor Previsto Inicial` = &quot;VL_PREV_INICIAL&quot;,
+</span><span id="__span-40-13"><a id="__codelineno-40-13" name="__codelineno-40-13" href="#__codelineno-40-13"></a>    `Valor Efetivado Ajustado` = &quot;VL_EFET_AJUST&quot;
+</span><span id="__span-40-14"><a id="__codelineno-40-14" name="__codelineno-40-14" href="#__codelineno-40-14"></a>  )
+</span><span id="__span-40-15"><a id="__codelineno-40-15" name="__codelineno-40-15" href="#__codelineno-40-15"></a>
+</span><span id="__span-40-16"><a id="__codelineno-40-16" name="__codelineno-40-16" href="#__codelineno-40-16"></a>  excel &lt;- grepl(pattern = &quot;(.xlsx$)|(.xls$)|(.xlsm$)&quot;, path, ignore.case = TRUE)
+</span><span id="__span-40-17"><a id="__codelineno-40-17" name="__codelineno-40-17" href="#__codelineno-40-17"></a>  csv &lt;- grepl(pattern = &quot;.csv$&quot;, path, ignore.case = TRUE)
+</span><span id="__span-40-18"><a id="__codelineno-40-18" name="__codelineno-40-18" href="#__codelineno-40-18"></a>
+</span><span id="__span-40-19"><a id="__codelineno-40-19" name="__codelineno-40-19" href="#__codelineno-40-19"></a>  if(excel) {
+</span><span id="__span-40-20"><a id="__codelineno-40-20" name="__codelineno-40-20" href="#__codelineno-40-20"></a>    base &lt;- data.table(read_excel(path))
+</span><span id="__span-40-21"><a id="__codelineno-40-21" name="__codelineno-40-21" href="#__codelineno-40-21"></a>  } else if(csv) {
+</span><span id="__span-40-22"><a id="__codelineno-40-22" name="__codelineno-40-22" href="#__codelineno-40-22"></a>    base &lt;- data.table(read.csv2(path, stringsAsFactors = FALSE,  check.names = FALSE))
+</span><span id="__span-40-23"><a id="__codelineno-40-23" name="__codelineno-40-23" href="#__codelineno-40-23"></a>  } else {
+</span><span id="__span-40-24"><a id="__codelineno-40-24" name="__codelineno-40-24" href="#__codelineno-40-24"></a>    stop(&quot;Extensao invalida de arquivo.&quot;)
+</span><span id="__span-40-25"><a id="__codelineno-40-25" name="__codelineno-40-25" href="#__codelineno-40-25"></a>  }
+</span><span id="__span-40-26"><a id="__codelineno-40-26" name="__codelineno-40-26" href="#__codelineno-40-26"></a>
+</span><span id="__span-40-27"><a id="__codelineno-40-27" name="__codelineno-40-27" href="#__codelineno-40-27"></a>  base &lt;- check_base(base, cols)
+</span><span id="__span-40-28"><a id="__codelineno-40-28" name="__codelineno-40-28" href="#__codelineno-40-28"></a>
+</span><span id="__span-40-29"><a id="__codelineno-40-29" name="__codelineno-40-29" href="#__codelineno-40-29"></a>  return(base)
+</span><span id="__span-40-30"><a id="__codelineno-40-30" name="__codelineno-40-30" href="#__codelineno-40-30"></a>}
+</span></code></pre></div>
+</details>
+<details class="note">
+<summary>ler_exec_desp()</summary>
+<p>Altera nome das colunas e salva como "data.table".</p>
+<p>Só aceita .csv ou .xlsx.</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-41-1"><a id="__codelineno-41-1" name="__codelineno-41-1" href="#__codelineno-41-1"></a>ler_exec_desp &lt;- function(path) {
+</span><span id="__span-41-2"><a id="__codelineno-41-2" name="__codelineno-41-2" href="#__codelineno-41-2"></a>
+</span><span id="__span-41-3"><a id="__codelineno-41-3" name="__codelineno-41-3" href="#__codelineno-41-3"></a>  cols &lt;- c(
+</span><span id="__span-41-4"><a id="__codelineno-41-4" name="__codelineno-41-4" href="#__codelineno-41-4"></a>    `Ano de Exercício` = &quot;ANO&quot;,
+</span><span id="__span-41-5"><a id="__codelineno-41-5" name="__codelineno-41-5" href="#__codelineno-41-5"></a>    `Mês - Numérico` = &quot;MES_COD&quot;,
+</span><span id="__span-41-6"><a id="__codelineno-41-6" name="__codelineno-41-6" href="#__codelineno-41-6"></a>    `Unidade Orçamentária - Código` = &quot;UO_COD&quot;,
+</span><span id="__span-41-7"><a id="__codelineno-41-7" name="__codelineno-41-7" href="#__codelineno-41-7"></a>    `Unidade Orçamentária - Sigla` = &quot;UO_SIGLA&quot;,
+</span><span id="__span-41-8"><a id="__codelineno-41-8" name="__codelineno-41-8" href="#__codelineno-41-8"></a>    `Poder Unid Orçamentária - Código` = &quot;PODER_COD&quot;,
+</span><span id="__span-41-9"><a id="__codelineno-41-9" name="__codelineno-41-9" href="#__codelineno-41-9"></a>    `Poder Unid Orçamentária - Desc` = &quot;PODER_DESC&quot;,
+</span><span id="__span-41-10"><a id="__codelineno-41-10" name="__codelineno-41-10" href="#__codelineno-41-10"></a>    `Função - Código` = &quot;FUNCAO_COD&quot;,
+</span><span id="__span-41-11"><a id="__codelineno-41-11" name="__codelineno-41-11" href="#__codelineno-41-11"></a>    `Função - Descrição` = &quot;FUNCAO_DESC&quot;,
+</span><span id="__span-41-12"><a id="__codelineno-41-12" name="__codelineno-41-12" href="#__codelineno-41-12"></a>    `Subfunção - Código` = &quot;SUBFUNCAO_COD&quot;,
+</span><span id="__span-41-13"><a id="__codelineno-41-13" name="__codelineno-41-13" href="#__codelineno-41-13"></a>    `Subfunção - Descrição` = &quot;SUBFUNCAO_DESC&quot;,
+</span><span id="__span-41-14"><a id="__codelineno-41-14" name="__codelineno-41-14" href="#__codelineno-41-14"></a>    `Programa - Código` = &quot;PROGRAMA_COD&quot;,
+</span><span id="__span-41-15"><a id="__codelineno-41-15" name="__codelineno-41-15" href="#__codelineno-41-15"></a>    `Programa - Descrição` = &quot;PROGRAMA_DESC&quot;,
+</span><span id="__span-41-16"><a id="__codelineno-41-16" name="__codelineno-41-16" href="#__codelineno-41-16"></a>    `Projeto_Atividade - Código` = &quot;ACAO_COD&quot;,
+</span><span id="__span-41-17"><a id="__codelineno-41-17" name="__codelineno-41-17" href="#__codelineno-41-17"></a>    `Projeto_Atividade - Descrição` = &quot;ACAO_DESC&quot;,
+</span><span id="__span-41-18"><a id="__codelineno-41-18" name="__codelineno-41-18" href="#__codelineno-41-18"></a>    `Categoria Econômica Despesa -Código` = &quot;CATEGORIA_COD&quot;,
+</span><span id="__span-41-19"><a id="__codelineno-41-19" name="__codelineno-41-19" href="#__codelineno-41-19"></a>    `Categoria Econômica Despesa - Desc` = &quot;CATEGORIA_DESC&quot;,
+</span><span id="__span-41-20"><a id="__codelineno-41-20" name="__codelineno-41-20" href="#__codelineno-41-20"></a>    `Grupo Despesa - Código` = &quot;GRUPO_COD&quot;,
+</span><span id="__span-41-21"><a id="__codelineno-41-21" name="__codelineno-41-21" href="#__codelineno-41-21"></a>    `Grupo Despesa - Descrição` = &quot;GRUPO_DESC&quot;,
+</span><span id="__span-41-22"><a id="__codelineno-41-22" name="__codelineno-41-22" href="#__codelineno-41-22"></a>    `Modalidade Aplicação - Código` = &quot;MODALIDADE_COD&quot;,
+</span><span id="__span-41-23"><a id="__codelineno-41-23" name="__codelineno-41-23" href="#__codelineno-41-23"></a>    `Modalidade Aplicação - Descrição` = &quot;MODALIDADE_DESC&quot;,
+</span><span id="__span-41-24"><a id="__codelineno-41-24" name="__codelineno-41-24" href="#__codelineno-41-24"></a>    `Elemento Despesa - Código` = &quot;ELEMENTO_COD&quot;,
+</span><span id="__span-41-25"><a id="__codelineno-41-25" name="__codelineno-41-25" href="#__codelineno-41-25"></a>    `Elemento Despesa - Descrição` = &quot;ELEMENTO_DESC&quot;,
+</span><span id="__span-41-26"><a id="__codelineno-41-26" name="__codelineno-41-26" href="#__codelineno-41-26"></a>    `Item Despesa - Código` = &quot;ITEM_COD&quot;,
+</span><span id="__span-41-27"><a id="__codelineno-41-27" name="__codelineno-41-27" href="#__codelineno-41-27"></a>    `Item Despesa - Descrição` = &quot;ITEM_DESC&quot;,
+</span><span id="__span-41-28"><a id="__codelineno-41-28" name="__codelineno-41-28" href="#__codelineno-41-28"></a>    `Elemento Item Despesa - Código` = &quot;ELEMENTO_ITEM_COD&quot;,
+</span><span id="__span-41-29"><a id="__codelineno-41-29" name="__codelineno-41-29" href="#__codelineno-41-29"></a>    `Elemento Item Despesa - Descrição` = &quot;ELEMENTO_ITEM_DESC&quot;,
+</span><span id="__span-41-30"><a id="__codelineno-41-30" name="__codelineno-41-30" href="#__codelineno-41-30"></a>    `Fonte Recurso - Código` = &quot;FONTE_COD&quot;,
+</span><span id="__span-41-31"><a id="__codelineno-41-31" name="__codelineno-41-31" href="#__codelineno-41-31"></a>    `Fonte Recurso - Descrição` = &quot;FONTE_DESC&quot;,
+</span><span id="__span-41-32"><a id="__codelineno-41-32" name="__codelineno-41-32" href="#__codelineno-41-32"></a>    `Identificador Orçamento - Código` = &quot;IAG_COD&quot;,
+</span><span id="__span-41-33"><a id="__codelineno-41-33" name="__codelineno-41-33" href="#__codelineno-41-33"></a>    `Procedência - Código` = &quot;IPU_COD&quot;,
+</span><span id="__span-41-34"><a id="__codelineno-41-34" name="__codelineno-41-34" href="#__codelineno-41-34"></a>    `Procedência - Descrição` = &quot;IPU_DESC&quot;,
+</span><span id="__span-41-35"><a id="__codelineno-41-35" name="__codelineno-41-35" href="#__codelineno-41-35"></a>    `Valor Despesa Empenhada` = &quot;VL_EMP&quot;,
+</span><span id="__span-41-36"><a id="__codelineno-41-36" name="__codelineno-41-36" href="#__codelineno-41-36"></a>    `Valor Despesa Liquidada` = &quot;VL_LIQ&quot;,
+</span><span id="__span-41-37"><a id="__codelineno-41-37" name="__codelineno-41-37" href="#__codelineno-41-37"></a>    `Valor Pago Financeiro` = &quot;VL_PAGO_FIN&quot;,
+</span><span id="__span-41-38"><a id="__codelineno-41-38" name="__codelineno-41-38" href="#__codelineno-41-38"></a>    `Valor Pago Orçamentário` = &quot;VL_PAGO_ORC&quot;
+</span><span id="__span-41-39"><a id="__codelineno-41-39" name="__codelineno-41-39" href="#__codelineno-41-39"></a>  )
+</span><span id="__span-41-40"><a id="__codelineno-41-40" name="__codelineno-41-40" href="#__codelineno-41-40"></a>
+</span><span id="__span-41-41"><a id="__codelineno-41-41" name="__codelineno-41-41" href="#__codelineno-41-41"></a>  excel &lt;- grepl(pattern = &quot;(.xlsx$)|(.xls$)|(.xlsm$)&quot;, path, ignore.case = TRUE)
+</span><span id="__span-41-42"><a id="__codelineno-41-42" name="__codelineno-41-42" href="#__codelineno-41-42"></a>  csv &lt;- grepl(pattern = &quot;.csv$&quot;, path, ignore.case = TRUE)
+</span><span id="__span-41-43"><a id="__codelineno-41-43" name="__codelineno-41-43" href="#__codelineno-41-43"></a>
+</span><span id="__span-41-44"><a id="__codelineno-41-44" name="__codelineno-41-44" href="#__codelineno-41-44"></a>  if(excel) {
+</span><span id="__span-41-45"><a id="__codelineno-41-45" name="__codelineno-41-45" href="#__codelineno-41-45"></a>    sheets &lt;- excel_sheets(path)
+</span><span id="__span-41-46"><a id="__codelineno-41-46" name="__codelineno-41-46" href="#__codelineno-41-46"></a>    regex &lt;- &quot;\\([0-9]+\\)$&quot;
+</span><span id="__span-41-47"><a id="__codelineno-41-47" name="__codelineno-41-47" href="#__codelineno-41-47"></a>    matched &lt;- grepl(regex, sheets)
+</span><span id="__span-41-48"><a id="__codelineno-41-48" name="__codelineno-41-48" href="#__codelineno-41-48"></a>    raiz &lt;- unique(sub(regex, &quot;&quot;, sheets[matched]))
+</span><span id="__span-41-49"><a id="__codelineno-41-49" name="__codelineno-41-49" href="#__codelineno-41-49"></a>
+</span><span id="__span-41-50"><a id="__codelineno-41-50" name="__codelineno-41-50" href="#__codelineno-41-50"></a>    stopifnot(length(raiz) &lt;= 1)
+</span><span id="__span-41-51"><a id="__codelineno-41-51" name="__codelineno-41-51" href="#__codelineno-41-51"></a>
+</span><span id="__span-41-52"><a id="__codelineno-41-52" name="__codelineno-41-52" href="#__codelineno-41-52"></a>    if(length(raiz)==0)
+</span><span id="__span-41-53"><a id="__codelineno-41-53" name="__codelineno-41-53" href="#__codelineno-41-53"></a>      sheets &lt;- sheets[1] else
+</span><span id="__span-41-54"><a id="__codelineno-41-54" name="__codelineno-41-54" href="#__codelineno-41-54"></a>      sheets &lt;- sheets[grepl(paste0(&quot;^&quot;,raiz), sheets)]
+</span><span id="__span-41-55"><a id="__codelineno-41-55" name="__codelineno-41-55" href="#__codelineno-41-55"></a>
+</span><span id="__span-41-56"><a id="__codelineno-41-56" name="__codelineno-41-56" href="#__codelineno-41-56"></a>    col_names &lt;- c(list(TRUE), rep(list(FALSE), length(sheets) - 1))
+</span><span id="__span-41-57"><a id="__codelineno-41-57" name="__codelineno-41-57" href="#__codelineno-41-57"></a>
+</span><span id="__span-41-58"><a id="__codelineno-41-58" name="__codelineno-41-58" href="#__codelineno-41-58"></a>    base_raw &lt;- Map(read_excel, path = path, sheet = sheets, na = &quot;NA&quot;, col_names = col_names)
+</span><span id="__span-41-59"><a id="__codelineno-41-59" name="__codelineno-41-59" href="#__codelineno-41-59"></a>    base &lt;- rbindlist(base_raw)
+</span><span id="__span-41-60"><a id="__codelineno-41-60" name="__codelineno-41-60" href="#__codelineno-41-60"></a>  } else if(csv) {
+</span><span id="__span-41-61"><a id="__codelineno-41-61" name="__codelineno-41-61" href="#__codelineno-41-61"></a>    base &lt;- data.table(read.csv2(path, stringsAsFactors = FALSE,  check.names = FALSE))
+</span><span id="__span-41-62"><a id="__codelineno-41-62" name="__codelineno-41-62" href="#__codelineno-41-62"></a>  } else {
+</span><span id="__span-41-63"><a id="__codelineno-41-63" name="__codelineno-41-63" href="#__codelineno-41-63"></a>    stop(&quot;Extensao de arquivo invalida.&quot;)
+</span><span id="__span-41-64"><a id="__codelineno-41-64" name="__codelineno-41-64" href="#__codelineno-41-64"></a>  }
+</span><span id="__span-41-65"><a id="__codelineno-41-65" name="__codelineno-41-65" href="#__codelineno-41-65"></a>
+</span><span id="__span-41-66"><a id="__codelineno-41-66" name="__codelineno-41-66" href="#__codelineno-41-66"></a>  base &lt;- check_base(base, cols)
+</span><span id="__span-41-67"><a id="__codelineno-41-67" name="__codelineno-41-67" href="#__codelineno-41-67"></a>  return(base)
+</span><span id="__span-41-68"><a id="__codelineno-41-68" name="__codelineno-41-68" href="#__codelineno-41-68"></a>}
+</span></code></pre></div>
+</details>
+<details class="note">
+<summary>ler_reest_rec()</summary>
+<p>Salva como "data.table".</p>
+<p>Só aceita .csv ou .xlsx.</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-42-1"><a id="__codelineno-42-1" name="__codelineno-42-1" href="#__codelineno-42-1"></a>ler_reest_rec &lt;- function(path) {
+</span><span id="__span-42-2"><a id="__codelineno-42-2" name="__codelineno-42-2" href="#__codelineno-42-2"></a>
+</span><span id="__span-42-3"><a id="__codelineno-42-3" name="__codelineno-42-3" href="#__codelineno-42-3"></a>  cols &lt;- NA_character_ # nao e necessario ajustas nomes das colunas da base reest
+</span><span id="__span-42-4"><a id="__codelineno-42-4" name="__codelineno-42-4" href="#__codelineno-42-4"></a>
+</span><span id="__span-42-5"><a id="__codelineno-42-5" name="__codelineno-42-5" href="#__codelineno-42-5"></a>  excel &lt;- grepl(pattern = &quot;(.xlsx$)|(.xls$)|(.xlsm$)&quot;, path, ignore.case = TRUE)
+</span><span id="__span-42-6"><a id="__codelineno-42-6" name="__codelineno-42-6" href="#__codelineno-42-6"></a>  csv &lt;- grepl(pattern = &quot;.csv$&quot;, path, ignore.case = TRUE)
+</span><span id="__span-42-7"><a id="__codelineno-42-7" name="__codelineno-42-7" href="#__codelineno-42-7"></a>
+</span><span id="__span-42-8"><a id="__codelineno-42-8" name="__codelineno-42-8" href="#__codelineno-42-8"></a>  if(excel) {
+</span><span id="__span-42-9"><a id="__codelineno-42-9" name="__codelineno-42-9" href="#__codelineno-42-9"></a>    base &lt;- data.table(read_excel(path, na = &quot;NA&quot;, sheet = &quot;base&quot;))
+</span><span id="__span-42-10"><a id="__codelineno-42-10" name="__codelineno-42-10" href="#__codelineno-42-10"></a>  } else if(csv) {
+</span><span id="__span-42-11"><a id="__codelineno-42-11" name="__codelineno-42-11" href="#__codelineno-42-11"></a>    base &lt;- data.table(read.csv2(path, stringsAsFactors = FALSE,  check.names = FALSE))
+</span><span id="__span-42-12"><a id="__codelineno-42-12" name="__codelineno-42-12" href="#__codelineno-42-12"></a>  } else {
+</span><span id="__span-42-13"><a id="__codelineno-42-13" name="__codelineno-42-13" href="#__codelineno-42-13"></a>    stop(&quot;Extensao invalida de arquivo.&quot;)
+</span><span id="__span-42-14"><a id="__codelineno-42-14" name="__codelineno-42-14" href="#__codelineno-42-14"></a>  }
+</span><span id="__span-42-15"><a id="__codelineno-42-15" name="__codelineno-42-15" href="#__codelineno-42-15"></a>
+</span><span id="__span-42-16"><a id="__codelineno-42-16" name="__codelineno-42-16" href="#__codelineno-42-16"></a>  base &lt;- check_base(base, cols)
+</span><span id="__span-42-17"><a id="__codelineno-42-17" name="__codelineno-42-17" href="#__codelineno-42-17"></a>
+</span><span id="__span-42-18"><a id="__codelineno-42-18" name="__codelineno-42-18" href="#__codelineno-42-18"></a>  return(base)
+</span><span id="__span-42-19"><a id="__codelineno-42-19" name="__codelineno-42-19" href="#__codelineno-42-19"></a>}
+</span></code></pre></div>
+</details>
+<details class="note">
+<summary>ler_reest_desp</summary>
+<p>Salva como "data.table".</p>
+<p>Só aceita .csv ou .xlsx.</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-43-1"><a id="__codelineno-43-1" name="__codelineno-43-1" href="#__codelineno-43-1"></a>ler_reest_desp &lt;- function(path) {
+</span><span id="__span-43-2"><a id="__codelineno-43-2" name="__codelineno-43-2" href="#__codelineno-43-2"></a>
+</span><span id="__span-43-3"><a id="__codelineno-43-3" name="__codelineno-43-3" href="#__codelineno-43-3"></a>  cols &lt;- NA_character_ # nao e necessario ajustas nomes das colunas da base reest
+</span><span id="__span-43-4"><a id="__codelineno-43-4" name="__codelineno-43-4" href="#__codelineno-43-4"></a>
+</span><span id="__span-43-5"><a id="__codelineno-43-5" name="__codelineno-43-5" href="#__codelineno-43-5"></a>  excel &lt;- grepl(pattern = &quot;(.xlsx$)|(.xls$)|(.xlsm$)&quot;, path, ignore.case = TRUE)
+</span><span id="__span-43-6"><a id="__codelineno-43-6" name="__codelineno-43-6" href="#__codelineno-43-6"></a>  csv &lt;- grepl(pattern = &quot;.csv$&quot;, path, ignore.case = TRUE)
+</span><span id="__span-43-7"><a id="__codelineno-43-7" name="__codelineno-43-7" href="#__codelineno-43-7"></a>
+</span><span id="__span-43-8"><a id="__codelineno-43-8" name="__codelineno-43-8" href="#__codelineno-43-8"></a>  if(excel) {
+</span><span id="__span-43-9"><a id="__codelineno-43-9" name="__codelineno-43-9" href="#__codelineno-43-9"></a>    base &lt;- data.table(read_excel(path, na = &quot;NA&quot;, sheet = &quot;base&quot;))
+</span><span id="__span-43-10"><a id="__codelineno-43-10" name="__codelineno-43-10" href="#__codelineno-43-10"></a>  } else if(csv) {
+</span><span id="__span-43-11"><a id="__codelineno-43-11" name="__codelineno-43-11" href="#__codelineno-43-11"></a>    base &lt;- data.table(read.csv2(path, stringsAsFactors = FALSE,  check.names = FALSE))
+</span><span id="__span-43-12"><a id="__codelineno-43-12" name="__codelineno-43-12" href="#__codelineno-43-12"></a>  } else {
+</span><span id="__span-43-13"><a id="__codelineno-43-13" name="__codelineno-43-13" href="#__codelineno-43-13"></a>    stop(&quot;Extensao invalida de arquivo.&quot;)
+</span><span id="__span-43-14"><a id="__codelineno-43-14" name="__codelineno-43-14" href="#__codelineno-43-14"></a>  }
+</span><span id="__span-43-15"><a id="__codelineno-43-15" name="__codelineno-43-15" href="#__codelineno-43-15"></a>
+</span><span id="__span-43-16"><a id="__codelineno-43-16" name="__codelineno-43-16" href="#__codelineno-43-16"></a>  base &lt;- check_base(base, cols)
+</span><span id="__span-43-17"><a id="__codelineno-43-17" name="__codelineno-43-17" href="#__codelineno-43-17"></a>
+</span><span id="__span-43-18"><a id="__codelineno-43-18" name="__codelineno-43-18" href="#__codelineno-43-18"></a>  return(base)
+</span><span id="__span-43-19"><a id="__codelineno-43-19" name="__codelineno-43-19" href="#__codelineno-43-19"></a>}
+</span></code></pre></div>
+</details>
+<details class="note">
+<summary>ler_loa_rec()</summary>
+<p>Altera nome das colunas e salva como "data.table".</p>
+<p>Só aceita .csv ou .xlsx.</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-44-1"><a id="__codelineno-44-1" name="__codelineno-44-1" href="#__codelineno-44-1"></a>ler_loa_rec &lt;- function(path) {
+</span><span id="__span-44-2"><a id="__codelineno-44-2" name="__codelineno-44-2" href="#__codelineno-44-2"></a>
+</span><span id="__span-44-3"><a id="__codelineno-44-3" name="__codelineno-44-3" href="#__codelineno-44-3"></a>  cols &lt;- c(
+</span><span id="__span-44-4"><a id="__codelineno-44-4" name="__codelineno-44-4" href="#__codelineno-44-4"></a>    `COD_UO` = &quot;UO_COD&quot;,
+</span><span id="__span-44-5"><a id="__codelineno-44-5" name="__codelineno-44-5" href="#__codelineno-44-5"></a>    `NOME_UO` = &quot;UO_DESC&quot;,
+</span><span id="__span-44-6"><a id="__codelineno-44-6" name="__codelineno-44-6" href="#__codelineno-44-6"></a>    `SIGLA_UO` = &quot;UO_SIGLA&quot;,
+</span><span id="__span-44-7"><a id="__codelineno-44-7" name="__codelineno-44-7" href="#__codelineno-44-7"></a>    `COD_FONTE` = &quot;FONTE_COD&quot;,
+</span><span id="__span-44-8"><a id="__codelineno-44-8" name="__codelineno-44-8" href="#__codelineno-44-8"></a>    `FONTE` = &quot;FONTE_DESC&quot;,
+</span><span id="__span-44-9"><a id="__codelineno-44-9" name="__codelineno-44-9" href="#__codelineno-44-9"></a>    `INTERPRETACAO` = &quot;INTERPRETACAO&quot;,
+</span><span id="__span-44-10"><a id="__codelineno-44-10" name="__codelineno-44-10" href="#__codelineno-44-10"></a>    `CATEGORIA` = &quot;CATEGORIA_COD&quot;,
+</span><span id="__span-44-11"><a id="__codelineno-44-11" name="__codelineno-44-11" href="#__codelineno-44-11"></a>    `SUBCATEGORIA` = &quot;SUBCATEGORIA_COD&quot;,
+</span><span id="__span-44-12"><a id="__codelineno-44-12" name="__codelineno-44-12" href="#__codelineno-44-12"></a>    `FONTE_CLAS` = &quot;FONTE_REC_COD&quot;,
+</span><span id="__span-44-13"><a id="__codelineno-44-13" name="__codelineno-44-13" href="#__codelineno-44-13"></a>    `RUBRICA` = &quot;RUBRICA_COD&quot;,
+</span><span id="__span-44-14"><a id="__codelineno-44-14" name="__codelineno-44-14" href="#__codelineno-44-14"></a>    `ALINEA` = &quot;ALINEA_COD&quot;,
+</span><span id="__span-44-15"><a id="__codelineno-44-15" name="__codelineno-44-15" href="#__codelineno-44-15"></a>    `SUBALINEA` = &quot;SUBALINEA_COD&quot;,
+</span><span id="__span-44-16"><a id="__codelineno-44-16" name="__codelineno-44-16" href="#__codelineno-44-16"></a>    `ITEM` = &quot;ITEM_COD&quot;,
+</span><span id="__span-44-17"><a id="__codelineno-44-17" name="__codelineno-44-17" href="#__codelineno-44-17"></a>    `COD_RECEITA` = &quot;RECEITA_COD&quot;,
+</span><span id="__span-44-18"><a id="__codelineno-44-18" name="__codelineno-44-18" href="#__codelineno-44-18"></a>    `RECEITA` = &quot;RECEITA_DESC&quot;,
+</span><span id="__span-44-19"><a id="__codelineno-44-19" name="__codelineno-44-19" href="#__codelineno-44-19"></a>    `INTERP_RECEITA` = &quot;INTERP_RECEITA&quot;,
+</span><span id="__span-44-20"><a id="__codelineno-44-20" name="__codelineno-44-20" href="#__codelineno-44-20"></a>    `VALOR UO (R$)` = &quot;VL_LOA_REC_UO&quot;,
+</span><span id="__span-44-21"><a id="__codelineno-44-21" name="__codelineno-44-21" href="#__codelineno-44-21"></a>    `VALOR SCPPO (R$)` = &quot;VL_LOA_REC_SCPPO&quot;,
+</span><span id="__span-44-22"><a id="__codelineno-44-22" name="__codelineno-44-22" href="#__codelineno-44-22"></a>    `VALOR FINAL (R$)` = &quot;VL_LOA_REC&quot;,
+</span><span id="__span-44-23"><a id="__codelineno-44-23" name="__codelineno-44-23" href="#__codelineno-44-23"></a>    `ANO` = &quot;ANO&quot;,
+</span><span id="__span-44-24"><a id="__codelineno-44-24" name="__codelineno-44-24" href="#__codelineno-44-24"></a>    `BASE LEGAL` = &quot;BASE_LEGAL&quot;,
+</span><span id="__span-44-25"><a id="__codelineno-44-25" name="__codelineno-44-25" href="#__codelineno-44-25"></a>    `METODOLOGIA DE CÁLCULO E PREMISSAS UTILIZADAS` = &quot;MEMORIA_CALCULO&quot;
+</span><span id="__span-44-26"><a id="__codelineno-44-26" name="__codelineno-44-26" href="#__codelineno-44-26"></a>  )
+</span><span id="__span-44-27"><a id="__codelineno-44-27" name="__codelineno-44-27" href="#__codelineno-44-27"></a>
+</span><span id="__span-44-28"><a id="__codelineno-44-28" name="__codelineno-44-28" href="#__codelineno-44-28"></a>  excel &lt;- grepl(pattern = &quot;(.xlsx$)|(.xls$)|(.xlsm$)&quot;, path, ignore.case = TRUE)
+</span><span id="__span-44-29"><a id="__codelineno-44-29" name="__codelineno-44-29" href="#__codelineno-44-29"></a>  csv &lt;- grepl(pattern = &quot;.csv$&quot;, path, ignore.case = TRUE)
+</span><span id="__span-44-30"><a id="__codelineno-44-30" name="__codelineno-44-30" href="#__codelineno-44-30"></a>
+</span><span id="__span-44-31"><a id="__codelineno-44-31" name="__codelineno-44-31" href="#__codelineno-44-31"></a>  if(excel) {
+</span><span id="__span-44-32"><a id="__codelineno-44-32" name="__codelineno-44-32" href="#__codelineno-44-32"></a>    base &lt;- data.table(read_excel(path))
+</span><span id="__span-44-33"><a id="__codelineno-44-33" name="__codelineno-44-33" href="#__codelineno-44-33"></a>  } else if(csv) {
+</span><span id="__span-44-34"><a id="__codelineno-44-34" name="__codelineno-44-34" href="#__codelineno-44-34"></a>    base &lt;- data.table(read.csv2(path, stringsAsFactors = FALSE,  check.names = FALSE))
+</span><span id="__span-44-35"><a id="__codelineno-44-35" name="__codelineno-44-35" href="#__codelineno-44-35"></a>  } else {
+</span><span id="__span-44-36"><a id="__codelineno-44-36" name="__codelineno-44-36" href="#__codelineno-44-36"></a>    stop(&quot;Extensao invalida de arquivo.&quot;)
+</span><span id="__span-44-37"><a id="__codelineno-44-37" name="__codelineno-44-37" href="#__codelineno-44-37"></a>  }
+</span><span id="__span-44-38"><a id="__codelineno-44-38" name="__codelineno-44-38" href="#__codelineno-44-38"></a>
+</span><span id="__span-44-39"><a id="__codelineno-44-39" name="__codelineno-44-39" href="#__codelineno-44-39"></a>  base &lt;- check_base(base, cols)
+</span><span id="__span-44-40"><a id="__codelineno-44-40" name="__codelineno-44-40" href="#__codelineno-44-40"></a>
+</span><span id="__span-44-41"><a id="__codelineno-44-41" name="__codelineno-44-41" href="#__codelineno-44-41"></a>  return(base)
+</span><span id="__span-44-42"><a id="__codelineno-44-42" name="__codelineno-44-42" href="#__codelineno-44-42"></a>}
+</span></code></pre></div>
+</details>
+<details class="note">
+<summary>ler_loa_desp()</summary>
+<p>Altera nome das colunas e salva como "data.table".</p>
+<p>Só aceita .csv ou .xlsx.</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-45-1"><a id="__codelineno-45-1" name="__codelineno-45-1" href="#__codelineno-45-1"></a>ler_loa_desp &lt;- function(path) {
+</span><span id="__span-45-2"><a id="__codelineno-45-2" name="__codelineno-45-2" href="#__codelineno-45-2"></a>
+</span><span id="__span-45-3"><a id="__codelineno-45-3" name="__codelineno-45-3" href="#__codelineno-45-3"></a>  cols &lt;- c(
+</span><span id="__span-45-4"><a id="__codelineno-45-4" name="__codelineno-45-4" href="#__codelineno-45-4"></a>    # colunas base qdd fiscal
+</span><span id="__span-45-5"><a id="__codelineno-45-5" name="__codelineno-45-5" href="#__codelineno-45-5"></a>    `ANO` = &quot;ANO&quot;,
+</span><span id="__span-45-6"><a id="__codelineno-45-6" name="__codelineno-45-6" href="#__codelineno-45-6"></a>    `COD_ORGAO` = &quot;ORGAO_COD&quot;,
+</span><span id="__span-45-7"><a id="__codelineno-45-7" name="__codelineno-45-7" href="#__codelineno-45-7"></a>    `ORGAO` = &quot;ORGAO_DESC&quot;,
+</span><span id="__span-45-8"><a id="__codelineno-45-8" name="__codelineno-45-8" href="#__codelineno-45-8"></a>    `PODER` = &quot;PODER_COD&quot;,
+</span><span id="__span-45-9"><a id="__codelineno-45-9" name="__codelineno-45-9" href="#__codelineno-45-9"></a>    `SITUACAO` = &quot;SITUACAO&quot;,
+</span><span id="__span-45-10"><a id="__codelineno-45-10" name="__codelineno-45-10" href="#__codelineno-45-10"></a>    `COD_UO` = &quot;UO_COD&quot;,
+</span><span id="__span-45-11"><a id="__codelineno-45-11" name="__codelineno-45-11" href="#__codelineno-45-11"></a>    `UO` = &quot;UO_DESC&quot;,
+</span><span id="__span-45-12"><a id="__codelineno-45-12" name="__codelineno-45-12" href="#__codelineno-45-12"></a>    `CATEGORIA` = &quot;CATEGORIA_COD&quot;,
+</span><span id="__span-45-13"><a id="__codelineno-45-13" name="__codelineno-45-13" href="#__codelineno-45-13"></a>    `GRUPO_DESPESA` = &quot;GRUPO_COD&quot;,
+</span><span id="__span-45-14"><a id="__codelineno-45-14" name="__codelineno-45-14" href="#__codelineno-45-14"></a>    `MODALIDADE` = &quot;MODALIDADE_COD&quot;,
+</span><span id="__span-45-15"><a id="__codelineno-45-15" name="__codelineno-45-15" href="#__codelineno-45-15"></a>    `ELEMENTO_DESPESA` = &quot;ELEMENTO_COD&quot;,
+</span><span id="__span-45-16"><a id="__codelineno-45-16" name="__codelineno-45-16" href="#__codelineno-45-16"></a>    `FONTE` = &quot;FONTE_COD&quot;,
+</span><span id="__span-45-17"><a id="__codelineno-45-17" name="__codelineno-45-17" href="#__codelineno-45-17"></a>    `IPU` = &quot;IPU_COD&quot;,
+</span><span id="__span-45-18"><a id="__codelineno-45-18" name="__codelineno-45-18" href="#__codelineno-45-18"></a>    `SEQ_PROGTRAB` = &quot;SEQ_PROGTRAB&quot;,
+</span><span id="__span-45-19"><a id="__codelineno-45-19" name="__codelineno-45-19" href="#__codelineno-45-19"></a>    `FUNCAO` = &quot;FUNCAO_COD&quot;,
+</span><span id="__span-45-20"><a id="__codelineno-45-20" name="__codelineno-45-20" href="#__codelineno-45-20"></a>    `SUB_FUNCAO` = &quot;SUBFUNCAO_COD&quot;,
+</span><span id="__span-45-21"><a id="__codelineno-45-21" name="__codelineno-45-21" href="#__codelineno-45-21"></a>    `PROGRAMA` = &quot;PROGRAMA_COD&quot;,
+</span><span id="__span-45-22"><a id="__codelineno-45-22" name="__codelineno-45-22" href="#__codelineno-45-22"></a>    `IDENT_PROJATIV` = &quot;IDENT_PROJ_ATIV_COD&quot;,
+</span><span id="__span-45-23"><a id="__codelineno-45-23" name="__codelineno-45-23" href="#__codelineno-45-23"></a>    `PROJ_ATIV` = &quot;PROJ_ATIV_COD&quot;,
+</span><span id="__span-45-24"><a id="__codelineno-45-24" name="__codelineno-45-24" href="#__codelineno-45-24"></a>    `AÇÃO` = &quot;ACAO_COD&quot;,
+</span><span id="__span-45-25"><a id="__codelineno-45-25" name="__codelineno-45-25" href="#__codelineno-45-25"></a>    `SUB_PROJETO` = &quot;SUBPROJETO_COD&quot;,
+</span><span id="__span-45-26"><a id="__codelineno-45-26" name="__codelineno-45-26" href="#__codelineno-45-26"></a>    `VALOR UO (R$)` = &quot;VL_LOA_DESP_UO&quot;,
+</span><span id="__span-45-27"><a id="__codelineno-45-27" name="__codelineno-45-27" href="#__codelineno-45-27"></a>    `VALOR SCPPO (R$)` = &quot;VL_LOA_DESP_SCPPO&quot;,
+</span><span id="__span-45-28"><a id="__codelineno-45-28" name="__codelineno-45-28" href="#__codelineno-45-28"></a>    `VALOR FINAL (R$)` = &quot;VL_LOA_DESP&quot;,
+</span><span id="__span-45-29"><a id="__codelineno-45-29" name="__codelineno-45-29" href="#__codelineno-45-29"></a>    `IAG` = &quot;IAG_COD&quot;,
+</span><span id="__span-45-30"><a id="__codelineno-45-30" name="__codelineno-45-30" href="#__codelineno-45-30"></a>    `NOME_ACAO` = &quot;ACAO_DESC&quot;,
+</span><span id="__span-45-31"><a id="__codelineno-45-31" name="__codelineno-45-31" href="#__codelineno-45-31"></a>    `NOME_PROGRAMA` = &quot;PROGRAMA_DESC&quot;,
+</span><span id="__span-45-32"><a id="__codelineno-45-32" name="__codelineno-45-32" href="#__codelineno-45-32"></a>    # colunas base elemento item
+</span><span id="__span-45-33"><a id="__codelineno-45-33" name="__codelineno-45-33" href="#__codelineno-45-33"></a>    `Código do Órgão` = &quot;ORGAO_COD&quot;,
+</span><span id="__span-45-34"><a id="__codelineno-45-34" name="__codelineno-45-34" href="#__codelineno-45-34"></a>    `Órgão` = &quot;ORGAO_DESC&quot;,
+</span><span id="__span-45-35"><a id="__codelineno-45-35" name="__codelineno-45-35" href="#__codelineno-45-35"></a>    `Código da UO` = &quot;UO_COD&quot;,
+</span><span id="__span-45-36"><a id="__codelineno-45-36" name="__codelineno-45-36" href="#__codelineno-45-36"></a>    `Unidade Orçamentária` = &quot;UO_DESC&quot;,
+</span><span id="__span-45-37"><a id="__codelineno-45-37" name="__codelineno-45-37" href="#__codelineno-45-37"></a>    `Função` = &quot;FUNCAO_COD&quot;,
+</span><span id="__span-45-38"><a id="__codelineno-45-38" name="__codelineno-45-38" href="#__codelineno-45-38"></a>    `Subfunção` = &quot;SUBFUNCAO_COD&quot;,
+</span><span id="__span-45-39"><a id="__codelineno-45-39" name="__codelineno-45-39" href="#__codelineno-45-39"></a>    `Programa` = &quot;PROGRAMA_COD&quot;,
+</span><span id="__span-45-40"><a id="__codelineno-45-40" name="__codelineno-45-40" href="#__codelineno-45-40"></a>    `Identificador` = &quot;IDENT_PROJ_ATIV_COD&quot;,
+</span><span id="__span-45-41"><a id="__codelineno-45-41" name="__codelineno-45-41" href="#__codelineno-45-41"></a>    `Projeto_Atividade` = &quot;PROJ_ATIV_COD&quot;,
+</span><span id="__span-45-42"><a id="__codelineno-45-42" name="__codelineno-45-42" href="#__codelineno-45-42"></a>    `Ação` = &quot;ACAO_COD&quot;,
+</span><span id="__span-45-43"><a id="__codelineno-45-43" name="__codelineno-45-43" href="#__codelineno-45-43"></a>    `Subprojeto` = &quot;SUBPROJETO_COD&quot;,
+</span><span id="__span-45-44"><a id="__codelineno-45-44" name="__codelineno-45-44" href="#__codelineno-45-44"></a>    `Categoria` = &quot;CATEGORIA_COD&quot;,
+</span><span id="__span-45-45"><a id="__codelineno-45-45" name="__codelineno-45-45" href="#__codelineno-45-45"></a>    `Grupo_Despesa` = &quot;GRUPO_COD&quot;,
+</span><span id="__span-45-46"><a id="__codelineno-45-46" name="__codelineno-45-46" href="#__codelineno-45-46"></a>    `Modalidade` = &quot;MODALIDADE_COD&quot;,
+</span><span id="__span-45-47"><a id="__codelineno-45-47" name="__codelineno-45-47" href="#__codelineno-45-47"></a>    `Elemento_Despesa` = &quot;ELEMENTO_COD&quot;,
+</span><span id="__span-45-48"><a id="__codelineno-45-48" name="__codelineno-45-48" href="#__codelineno-45-48"></a>    `Item_Despesa` = &quot;ITEM_COD&quot;,
+</span><span id="__span-45-49"><a id="__codelineno-45-49" name="__codelineno-45-49" href="#__codelineno-45-49"></a>    `Fonte` = &quot;FONTE_COD&quot;,
+</span><span id="__span-45-50"><a id="__codelineno-45-50" name="__codelineno-45-50" href="#__codelineno-45-50"></a>    `IPU` = &quot;IPU_COD&quot;,
+</span><span id="__span-45-51"><a id="__codelineno-45-51" name="__codelineno-45-51" href="#__codelineno-45-51"></a>    `IAG` = &quot;IAG_COD&quot;,
+</span><span id="__span-45-52"><a id="__codelineno-45-52" name="__codelineno-45-52" href="#__codelineno-45-52"></a>    `Descrição` = &quot;ACAO_DESC&quot;,
+</span><span id="__span-45-53"><a id="__codelineno-45-53" name="__codelineno-45-53" href="#__codelineno-45-53"></a>    `Valor (R$)` = &quot;VL_LOA_DESP&quot;
+</span><span id="__span-45-54"><a id="__codelineno-45-54" name="__codelineno-45-54" href="#__codelineno-45-54"></a>  )
+</span><span id="__span-45-55"><a id="__codelineno-45-55" name="__codelineno-45-55" href="#__codelineno-45-55"></a>
+</span><span id="__span-45-56"><a id="__codelineno-45-56" name="__codelineno-45-56" href="#__codelineno-45-56"></a>  excel &lt;- grepl(pattern = &quot;(.xlsx$)|(.xls$)|(.xlsm$)&quot;, path, ignore.case = TRUE)
+</span><span id="__span-45-57"><a id="__codelineno-45-57" name="__codelineno-45-57" href="#__codelineno-45-57"></a>  csv &lt;- grepl(pattern = &quot;.csv$&quot;, path, ignore.case = TRUE)
+</span><span id="__span-45-58"><a id="__codelineno-45-58" name="__codelineno-45-58" href="#__codelineno-45-58"></a>
+</span><span id="__span-45-59"><a id="__codelineno-45-59" name="__codelineno-45-59" href="#__codelineno-45-59"></a>  if(excel) {
+</span><span id="__span-45-60"><a id="__codelineno-45-60" name="__codelineno-45-60" href="#__codelineno-45-60"></a>    base &lt;- data.table(read_excel(path))
+</span><span id="__span-45-61"><a id="__codelineno-45-61" name="__codelineno-45-61" href="#__codelineno-45-61"></a>  } else if(csv) {
+</span><span id="__span-45-62"><a id="__codelineno-45-62" name="__codelineno-45-62" href="#__codelineno-45-62"></a>    base &lt;- data.table(read.csv2(path, stringsAsFactors = FALSE,  check.names = FALSE))
+</span><span id="__span-45-63"><a id="__codelineno-45-63" name="__codelineno-45-63" href="#__codelineno-45-63"></a>  } else {
+</span><span id="__span-45-64"><a id="__codelineno-45-64" name="__codelineno-45-64" href="#__codelineno-45-64"></a>    stop(&quot;Extensao invalida de arquivo.&quot;)
+</span><span id="__span-45-65"><a id="__codelineno-45-65" name="__codelineno-45-65" href="#__codelineno-45-65"></a>  }
+</span><span id="__span-45-66"><a id="__codelineno-45-66" name="__codelineno-45-66" href="#__codelineno-45-66"></a>
+</span><span id="__span-45-67"><a id="__codelineno-45-67" name="__codelineno-45-67" href="#__codelineno-45-67"></a>  base &lt;- check_base(base, cols)
+</span><span id="__span-45-68"><a id="__codelineno-45-68" name="__codelineno-45-68" href="#__codelineno-45-68"></a>
+</span><span id="__span-45-69"><a id="__codelineno-45-69" name="__codelineno-45-69" href="#__codelineno-45-69"></a>  return(base)
+</span><span id="__span-45-70"><a id="__codelineno-45-70" name="__codelineno-45-70" href="#__codelineno-45-70"></a>
+</span><span id="__span-45-71"><a id="__codelineno-45-71" name="__codelineno-45-71" href="#__codelineno-45-71"></a>}
+</span></code></pre></div>
+</details>
+</details>
+<details class="note">
+<summary>helper_test_equal.R</summary>
+<p>Valida se "x + adj_x" é igual a "y + adj_y" (sem considerar decimais).</p>
+<p>Formata os valores "x", "y", "adj_x", "adj_y" e "diff".</p>
+<p>Retorna uma data.table com as colunas "CONTEXTO", "DESC", "RESULTADO", "DIFF_MSG", "VALOR_X", "VALOR_Y", "AJUSTE_X", "AJUSTE_Y" e "DESC_AJUSTE".</p>
+<p>Acrescenta esse data.frame à lista "resultado_testes"</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-46-1"><a id="__codelineno-46-1" name="__codelineno-46-1" href="#__codelineno-46-1"></a>test_equal &lt;- function(x, y,
+</span><span id="__span-46-2"><a id="__codelineno-46-2" name="__codelineno-46-2" href="#__codelineno-46-2"></a>                       adj_x = 0, adj_y = 0,
+</span><span id="__span-46-3"><a id="__codelineno-46-3" name="__codelineno-46-3" href="#__codelineno-46-3"></a>                       descricao = &quot;&quot;,
+</span><span id="__span-46-4"><a id="__codelineno-46-4" name="__codelineno-46-4" href="#__codelineno-46-4"></a>                       contexto = &quot;&quot;,
+</span><span id="__span-46-5"><a id="__codelineno-46-5" name="__codelineno-46-5" href="#__codelineno-46-5"></a>                       desc_adj = &quot;&quot;,
+</span><span id="__span-46-6"><a id="__codelineno-46-6" name="__codelineno-46-6" href="#__codelineno-46-6"></a>                       label_x = &quot;Receita&quot;, label_y = &quot;Despesa&quot;
+</span><span id="__span-46-7"><a id="__codelineno-46-7" name="__codelineno-46-7" href="#__codelineno-46-7"></a>                      ) {
+</span><span id="__span-46-8"><a id="__codelineno-46-8" name="__codelineno-46-8" href="#__codelineno-46-8"></a>
+</span><span id="__span-46-9"><a id="__codelineno-46-9" name="__codelineno-46-9" href="#__codelineno-46-9"></a>  # Calcula resultado do teste
+</span><span id="__span-46-10"><a id="__codelineno-46-10" name="__codelineno-46-10" href="#__codelineno-46-10"></a>  diff &lt;- round(x + adj_x, 0) - round(y + adj_y, 0)    # soma &quot;x&quot;/&quot;y&quot; com &quot;adj_x&quot;/&quot;adj_y&quot;, arredonda os resultados sem decimal e calcula diferença entre eles
+</span><span id="__span-46-11"><a id="__codelineno-46-11" name="__codelineno-46-11" href="#__codelineno-46-11"></a>  resultado &lt;- ifelse(diff == 0, TRUE, FALSE)    # se diff estiver zerado, define TRUE, se não, FALSE
+</span><span id="__span-46-12"><a id="__codelineno-46-12" name="__codelineno-46-12" href="#__codelineno-46-12"></a>
+</span><span id="__span-46-13"><a id="__codelineno-46-13" name="__codelineno-46-13" href="#__codelineno-46-13"></a>  # Formata valores: divide milhar por &quot;.&quot;, decimal por &quot;,&quot;, duas casas decimais
+</span><span id="__span-46-14"><a id="__codelineno-46-14" name="__codelineno-46-14" href="#__codelineno-46-14"></a>  pretty_x &lt;- format(x, big.mark = &quot;.&quot;, decimal.mark = &quot;,&quot;, nsmall = 2)
+</span><span id="__span-46-15"><a id="__codelineno-46-15" name="__codelineno-46-15" href="#__codelineno-46-15"></a>  pretty_y &lt;- format(y, big.mark = &quot;.&quot;, decimal.mark = &quot;,&quot;, nsmall = 2)
+</span><span id="__span-46-16"><a id="__codelineno-46-16" name="__codelineno-46-16" href="#__codelineno-46-16"></a>
+</span><span id="__span-46-17"><a id="__codelineno-46-17" name="__codelineno-46-17" href="#__codelineno-46-17"></a>  pretty_adj_x &lt;- format(adj_x, big.mark = &quot;.&quot;, decimal.mark = &quot;,&quot;, nsmall = 2)
+</span><span id="__span-46-18"><a id="__codelineno-46-18" name="__codelineno-46-18" href="#__codelineno-46-18"></a>  pretty_adj_y &lt;- format(adj_y, big.mark = &quot;.&quot;, decimal.mark = &quot;,&quot;, nsmall = 2)
+</span><span id="__span-46-19"><a id="__codelineno-46-19" name="__codelineno-46-19" href="#__codelineno-46-19"></a>
+</span><span id="__span-46-20"><a id="__codelineno-46-20" name="__codelineno-46-20" href="#__codelineno-46-20"></a>  pretty_diff &lt;- format(abs(diff), big.mark = &quot;.&quot;, decimal.mark = &quot;,&quot;, nsmall = 2)
+</span><span id="__span-46-21"><a id="__codelineno-46-21" name="__codelineno-46-21" href="#__codelineno-46-21"></a>
+</span><span id="__span-46-22"><a id="__codelineno-46-22" name="__codelineno-46-22" href="#__codelineno-46-22"></a>  # Cria mensagem em caso teste negativo (diff diferente de &quot;0&quot;)
+</span><span id="__span-46-23"><a id="__codelineno-46-23" name="__codelineno-46-23" href="#__codelineno-46-23"></a>  msg &lt;- ifelse(diff &gt; 0,
+</span><span id="__span-46-24"><a id="__codelineno-46-24" name="__codelineno-46-24" href="#__codelineno-46-24"></a>                    paste(label_x, &quot;maior que&quot;, label_y , &quot;em R$&quot;, pretty_diff),
+</span><span id="__span-46-25"><a id="__codelineno-46-25" name="__codelineno-46-25" href="#__codelineno-46-25"></a>                    ifelse(diff &lt; 0,
+</span><span id="__span-46-26"><a id="__codelineno-46-26" name="__codelineno-46-26" href="#__codelineno-46-26"></a>                            paste(label_x, &quot;menor que&quot;, label_y , &quot;em R$&quot;, pretty_diff), &quot;ok&quot;))
+</span><span id="__span-46-27"><a id="__codelineno-46-27" name="__codelineno-46-27" href="#__codelineno-46-27"></a>
+</span><span id="__span-46-28"><a id="__codelineno-46-28" name="__codelineno-46-28" href="#__codelineno-46-28"></a>  # Output: cria um data.frame com as colunas formatadas
+</span><span id="__span-46-29"><a id="__codelineno-46-29" name="__codelineno-46-29" href="#__codelineno-46-29"></a>  output &lt;- data.frame(CONTEXTO = contexto,
+</span><span id="__span-46-30"><a id="__codelineno-46-30" name="__codelineno-46-30" href="#__codelineno-46-30"></a>                      DESC = descricao,
+</span><span id="__span-46-31"><a id="__codelineno-46-31" name="__codelineno-46-31" href="#__codelineno-46-31"></a>                      RESULTADO = resultado,
+</span><span id="__span-46-32"><a id="__codelineno-46-32" name="__codelineno-46-32" href="#__codelineno-46-32"></a>                      DIFF_MSG = msg,
+</span><span id="__span-46-33"><a id="__codelineno-46-33" name="__codelineno-46-33" href="#__codelineno-46-33"></a>                      VALOR_X = pretty_x,
+</span><span id="__span-46-34"><a id="__codelineno-46-34" name="__codelineno-46-34" href="#__codelineno-46-34"></a>                      VALOR_Y = pretty_y,
+</span><span id="__span-46-35"><a id="__codelineno-46-35" name="__codelineno-46-35" href="#__codelineno-46-35"></a>                      AJUSTE_X = pretty_adj_x,
+</span><span id="__span-46-36"><a id="__codelineno-46-36" name="__codelineno-46-36" href="#__codelineno-46-36"></a>                      AJUSTE_Y = pretty_adj_y,
+</span><span id="__span-46-37"><a id="__codelineno-46-37" name="__codelineno-46-37" href="#__codelineno-46-37"></a>                      DESC_AJUSTE = desc_adj)
+</span><span id="__span-46-38"><a id="__codelineno-46-38" name="__codelineno-46-38" href="#__codelineno-46-38"></a>
+</span><span id="__span-46-39"><a id="__codelineno-46-39" name="__codelineno-46-39" href="#__codelineno-46-39"></a>  n &lt;- length(resultado_testes)
+</span><span id="__span-46-40"><a id="__codelineno-46-40" name="__codelineno-46-40" href="#__codelineno-46-40"></a>  resultado_testes[[n+1]] &lt;&lt;- output    # acrescenta o data.frame à lista &quot;resultado_testes&quot;
+</span><span id="__span-46-41"><a id="__codelineno-46-41" name="__codelineno-46-41" href="#__codelineno-46-41"></a>}
+</span></code></pre></div>
+</details>
+<details class="note">
+<summary>helper_test_greater.R</summary>
+<p>Valida se "x" é maior que "y".</p>
+<p>Formata os valores "x", "y" e "diff".</p>
+<p>Retorna uma data.table com as colunas "CONTEXTO", "DESC", "RESULTADO", "DIFF_MSG", "VALOR_X" e "VALOR_Y".</p>
+<p>Acrescenta esse data.frame à lista "resultado_testes"</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-47-1"><a id="__codelineno-47-1" name="__codelineno-47-1" href="#__codelineno-47-1"></a>test_greater_than &lt;- function(x, y,
+</span><span id="__span-47-2"><a id="__codelineno-47-2" name="__codelineno-47-2" href="#__codelineno-47-2"></a>                              descricao = &quot;&quot;,
+</span><span id="__span-47-3"><a id="__codelineno-47-3" name="__codelineno-47-3" href="#__codelineno-47-3"></a>                              contexto = &quot;&quot;,
+</span><span id="__span-47-4"><a id="__codelineno-47-4" name="__codelineno-47-4" href="#__codelineno-47-4"></a>                              label_x = &quot;Receita&quot;, label_y = &quot;Despesa&quot;
+</span><span id="__span-47-5"><a id="__codelineno-47-5" name="__codelineno-47-5" href="#__codelineno-47-5"></a>                             ) {
+</span><span id="__span-47-6"><a id="__codelineno-47-6" name="__codelineno-47-6" href="#__codelineno-47-6"></a>
+</span><span id="__span-47-7"><a id="__codelineno-47-7" name="__codelineno-47-7" href="#__codelineno-47-7"></a>  # Calcula resultado do teste
+</span><span id="__span-47-8"><a id="__codelineno-47-8" name="__codelineno-47-8" href="#__codelineno-47-8"></a>  diff &lt;- round(x - y, 0)    # calcula diferença entre &quot;x&quot; e &quot;y&quot; e arredonda o resultado sem decimal
+</span><span id="__span-47-9"><a id="__codelineno-47-9" name="__codelineno-47-9" href="#__codelineno-47-9"></a>  resultado &lt;- ifelse(diff &gt;= 0, TRUE, FALSE)    # se diff estiver zerado, define TRUE, se não, FALSE
+</span><span id="__span-47-10"><a id="__codelineno-47-10" name="__codelineno-47-10" href="#__codelineno-47-10"></a>
+</span><span id="__span-47-11"><a id="__codelineno-47-11" name="__codelineno-47-11" href="#__codelineno-47-11"></a>  # Formata valores: divide milhar por &quot;.&quot;, decimal por &quot;,&quot;, duas casas decimais, sem formato científico
+</span><span id="__span-47-12"><a id="__codelineno-47-12" name="__codelineno-47-12" href="#__codelineno-47-12"></a>  pretty_x &lt;- format(x, big.mark = &quot;.&quot;, decimal.mark = &quot;,&quot;, nsmall = 2,
+</span><span id="__span-47-13"><a id="__codelineno-47-13" name="__codelineno-47-13" href="#__codelineno-47-13"></a>                      scientific = FALSE)
+</span><span id="__span-47-14"><a id="__codelineno-47-14" name="__codelineno-47-14" href="#__codelineno-47-14"></a>  pretty_y &lt;- format(y, big.mark = &quot;.&quot;, decimal.mark = &quot;,&quot;, nsmall = 2,
+</span><span id="__span-47-15"><a id="__codelineno-47-15" name="__codelineno-47-15" href="#__codelineno-47-15"></a>                      scientific = FALSE)
+</span><span id="__span-47-16"><a id="__codelineno-47-16" name="__codelineno-47-16" href="#__codelineno-47-16"></a>
+</span><span id="__span-47-17"><a id="__codelineno-47-17" name="__codelineno-47-17" href="#__codelineno-47-17"></a>  pretty_diff &lt;- format(abs(diff), big.mark = &quot;.&quot;, decimal.mark = &quot;,&quot;, nsmall = 2,
+</span><span id="__span-47-18"><a id="__codelineno-47-18" name="__codelineno-47-18" href="#__codelineno-47-18"></a>                        scientific = FALSE)
+</span><span id="__span-47-19"><a id="__codelineno-47-19" name="__codelineno-47-19" href="#__codelineno-47-19"></a>
+</span><span id="__span-47-20"><a id="__codelineno-47-20" name="__codelineno-47-20" href="#__codelineno-47-20"></a>  # Cria mensagem em caso teste negativo (diff negativa)
+</span><span id="__span-47-21"><a id="__codelineno-47-21" name="__codelineno-47-21" href="#__codelineno-47-21"></a>  msg &lt;- ifelse(diff &lt; 0,
+</span><span id="__span-47-22"><a id="__codelineno-47-22" name="__codelineno-47-22" href="#__codelineno-47-22"></a>                    paste(label_y, &quot;maior que&quot;, label_x, &quot;em R$&quot;, pretty_diff), &quot;ok&quot;)
+</span><span id="__span-47-23"><a id="__codelineno-47-23" name="__codelineno-47-23" href="#__codelineno-47-23"></a>
+</span><span id="__span-47-24"><a id="__codelineno-47-24" name="__codelineno-47-24" href="#__codelineno-47-24"></a>  # Output: cria um data.frame com as colunas formatadas
+</span><span id="__span-47-25"><a id="__codelineno-47-25" name="__codelineno-47-25" href="#__codelineno-47-25"></a>  output &lt;- data.frame(CONTEXTO = contexto,
+</span><span id="__span-47-26"><a id="__codelineno-47-26" name="__codelineno-47-26" href="#__codelineno-47-26"></a>                      DESC = descricao,
+</span><span id="__span-47-27"><a id="__codelineno-47-27" name="__codelineno-47-27" href="#__codelineno-47-27"></a>                      RESULTADO = resultado,
+</span><span id="__span-47-28"><a id="__codelineno-47-28" name="__codelineno-47-28" href="#__codelineno-47-28"></a>                      DIFF_MSG = msg,
+</span><span id="__span-47-29"><a id="__codelineno-47-29" name="__codelineno-47-29" href="#__codelineno-47-29"></a>                      VALOR_X = pretty_x,
+</span><span id="__span-47-30"><a id="__codelineno-47-30" name="__codelineno-47-30" href="#__codelineno-47-30"></a>                      VALOR_Y = pretty_y)
+</span><span id="__span-47-31"><a id="__codelineno-47-31" name="__codelineno-47-31" href="#__codelineno-47-31"></a>
+</span><span id="__span-47-32"><a id="__codelineno-47-32" name="__codelineno-47-32" href="#__codelineno-47-32"></a>  n &lt;- length(resultado_testes)
+</span><span id="__span-47-33"><a id="__codelineno-47-33" name="__codelineno-47-33" href="#__codelineno-47-33"></a>  resultado_testes[[n+1]] &lt;&lt;- output    # acrescenta o data.frame à lista &quot;resultado_testes&quot;
+</span><span id="__span-47-34"><a id="__codelineno-47-34" name="__codelineno-47-34" href="#__codelineno-47-34"></a>}
+</span></code></pre></div>
+</details>
+<details class="note">
+<summary>test_complementacao.R</summary>
+<p>Obs.: há mais conteúdo, mas ficaria muito grande, então peguei o primeiro exemplo de cada caso</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-48-1"><a id="__codelineno-48-1" name="__codelineno-48-1" href="#__codelineno-48-1"></a>library(relatorios)
+</span><span id="__span-48-2"><a id="__codelineno-48-2" name="__codelineno-48-2" href="#__codelineno-48-2"></a>#====================================================================
+</span><span id="__span-48-3"><a id="__codelineno-48-3" name="__codelineno-48-3" href="#__codelineno-48-3"></a># Receita vs Complementacao
+</span><span id="__span-48-4"><a id="__codelineno-48-4" name="__codelineno-48-4" href="#__codelineno-48-4"></a>
+</span><span id="__span-48-5"><a id="__codelineno-48-5" name="__codelineno-48-5" href="#__codelineno-48-5"></a># Por exemplo, com base no arquivo &quot;data/reest_rec.csv&quot;
+</span><span id="__span-48-6"><a id="__codelineno-48-6" name="__codelineno-48-6" href="#__codelineno-48-6"></a>x &lt;- base$rec[nat(RECEITA_COD, 7999992114), sum(VL_REC)]
+</span><span id="__span-48-7"><a id="__codelineno-48-7" name="__codelineno-48-7" href="#__codelineno-48-7"></a>
+</span><span id="__span-48-8"><a id="__codelineno-48-8" name="__codelineno-48-8" href="#__codelineno-48-8"></a>y &lt;- base$desp[ACAO_COD == 7009,
+</span><span id="__span-48-9"><a id="__codelineno-48-9" name="__codelineno-48-9" href="#__codelineno-48-9"></a>              sum(VL_DESP)]
+</span><span id="__span-48-10"><a id="__codelineno-48-10" name="__codelineno-48-10" href="#__codelineno-48-10"></a>
+</span><span id="__span-48-11"><a id="__codelineno-48-11" name="__codelineno-48-11" href="#__codelineno-48-11"></a>test_equal(x, y,
+</span><span id="__span-48-12"><a id="__codelineno-48-12" name="__codelineno-48-12" href="#__codelineno-48-12"></a>          label_x = &quot;Receita (MATRIZ 799099111)&quot;,
+</span><span id="__span-48-13"><a id="__codelineno-48-13" name="__codelineno-48-13" href="#__codelineno-48-13"></a>          label_y = &quot;Complementa��o (ACAO 7009)&quot;,
+</span><span id="__span-48-14"><a id="__codelineno-48-14" name="__codelineno-48-14" href="#__codelineno-48-14"></a>          descricao = &quot;Receita vs Complementa��o&quot;,
+</span><span id="__span-48-15"><a id="__codelineno-48-15" name="__codelineno-48-15" href="#__codelineno-48-15"></a>          contexto = &quot;Complementa��o&quot;)
+</span><span id="__span-48-16"><a id="__codelineno-48-16" name="__codelineno-48-16" href="#__codelineno-48-16"></a>
+</span><span id="__span-48-17"><a id="__codelineno-48-17" name="__codelineno-48-17" href="#__codelineno-48-17"></a>#====================================================================
+</span><span id="__span-48-18"><a id="__codelineno-48-18" name="__codelineno-48-18" href="#__codelineno-48-18"></a># Receita vs Inativos
+</span><span id="__span-48-19"><a id="__codelineno-48-19" name="__codelineno-48-19" href="#__codelineno-48-19"></a>
+</span><span id="__span-48-20"><a id="__codelineno-48-20" name="__codelineno-48-20" href="#__codelineno-48-20"></a># EXECUTIVO
+</span><span id="__span-48-21"><a id="__codelineno-48-21" name="__codelineno-48-21" href="#__codelineno-48-21"></a>x &lt;- base$rec[nat(RECEITA_COD, 7999992114001, 1922990199000) &amp; FONTE_COD == 58,
+</span><span id="__span-48-22"><a id="__codelineno-48-22" name="__codelineno-48-22" href="#__codelineno-48-22"></a>              sum(VL_REC)]
+</span><span id="__span-48-23"><a id="__codelineno-48-23" name="__codelineno-48-23" href="#__codelineno-48-23"></a>
+</span><span id="__span-48-24"><a id="__codelineno-48-24" name="__codelineno-48-24" href="#__codelineno-48-24"></a>y &lt;- base$desp[UO_COD == 4711 &amp; FONTE_COD == 58,
+</span><span id="__span-48-25"><a id="__codelineno-48-25" name="__codelineno-48-25" href="#__codelineno-48-25"></a>              sum(VL_DESP)]
+</span><span id="__span-48-26"><a id="__codelineno-48-26" name="__codelineno-48-26" href="#__codelineno-48-26"></a>
+</span><span id="__span-48-27"><a id="__codelineno-48-27" name="__codelineno-48-27" href="#__codelineno-48-27"></a>test_equal(x, y,
+</span><span id="__span-48-28"><a id="__codelineno-48-28" name="__codelineno-48-28" href="#__codelineno-48-28"></a>          label_x = &quot;Receita (MATRIZ 7990991113001 e 1922991199000)&quot;,
+</span><span id="__span-48-29"><a id="__codelineno-48-29" name="__codelineno-48-29" href="#__codelineno-48-29"></a>          label_y = &quot;Inativos (UO 1441 e 4711)&quot;,
+</span><span id="__span-48-30"><a id="__codelineno-48-30" name="__codelineno-48-30" href="#__codelineno-48-30"></a>          descricao = &quot;Receita vs Inativos - EXECUTIVO&quot;,
+</span><span id="__span-48-31"><a id="__codelineno-48-31" name="__codelineno-48-31" href="#__codelineno-48-31"></a>          contexto = &quot;Complementa��o&quot;)
+</span><span id="__span-48-32"><a id="__codelineno-48-32" name="__codelineno-48-32" href="#__codelineno-48-32"></a>
+</span><span id="__span-48-33"><a id="__codelineno-48-33" name="__codelineno-48-33" href="#__codelineno-48-33"></a>#====================================================================
+</span><span id="__span-48-34"><a id="__codelineno-48-34" name="__codelineno-48-34" href="#__codelineno-48-34"></a># Complementacao vs Inativos
+</span><span id="__span-48-35"><a id="__codelineno-48-35" name="__codelineno-48-35" href="#__codelineno-48-35"></a>
+</span><span id="__span-48-36"><a id="__codelineno-48-36" name="__codelineno-48-36" href="#__codelineno-48-36"></a># LEMG
+</span><span id="__span-48-37"><a id="__codelineno-48-37" name="__codelineno-48-37" href="#__codelineno-48-37"></a>x &lt;- base$desp[UO_COD == 2041 &amp; ACAO_COD == 7009,
+</span><span id="__span-48-38"><a id="__codelineno-48-38" name="__codelineno-48-38" href="#__codelineno-48-38"></a>              sum(VL_DESP)]
+</span><span id="__span-48-39"><a id="__codelineno-48-39" name="__codelineno-48-39" href="#__codelineno-48-39"></a>
+</span><span id="__span-48-40"><a id="__codelineno-48-40" name="__codelineno-48-40" href="#__codelineno-48-40"></a>y &lt;- base$desp[UO_COD == 4711 &amp; ACAO_COD == 7617 &amp; FONTE_COD == 58,
+</span><span id="__span-48-41"><a id="__codelineno-48-41" name="__codelineno-48-41" href="#__codelineno-48-41"></a>              sum(VL_DESP)]
+</span><span id="__span-48-42"><a id="__codelineno-48-42" name="__codelineno-48-42" href="#__codelineno-48-42"></a>
+</span><span id="__span-48-43"><a id="__codelineno-48-43" name="__codelineno-48-43" href="#__codelineno-48-43"></a>test_equal(x, y,
+</span><span id="__span-48-44"><a id="__codelineno-48-44" name="__codelineno-48-44" href="#__codelineno-48-44"></a>          label_x = &quot;Complementa��o LEMG&quot;,
+</span><span id="__span-48-45"><a id="__codelineno-48-45" name="__codelineno-48-45" href="#__codelineno-48-45"></a>          label_y = &quot;Inativos LEMG (ACAO 7617 do FFPMG)&quot;,
+</span><span id="__span-48-46"><a id="__codelineno-48-46" name="__codelineno-48-46" href="#__codelineno-48-46"></a>          descricao = &quot;Complementacao vs Inativos - LEMG&quot;,
+</span><span id="__span-48-47"><a id="__codelineno-48-47" name="__codelineno-48-47" href="#__codelineno-48-47"></a>          contexto = &quot;Complementa��o&quot;)
+</span></code></pre></div>
+<details class="note">
+<summary>nat()</summary>
+<p>Retorna um vetor lógico, indicando quais "receita_cod" devem ser incluídos (TRUE).</p>
+<p>Ao usar a função, serão incluídas as naturezas positivas e excluídas as negativas.</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-49-1"><a id="__codelineno-49-1" name="__codelineno-49-1" href="#__codelineno-49-1"></a>nat &lt;- function(receita_cod, ...) {
+</span><span id="__span-49-2"><a id="__codelineno-49-2" name="__codelineno-49-2" href="#__codelineno-49-2"></a>  receita_cod &lt;- nat_as_char(receita_cod)    # formato numério
+</span><span id="__span-49-3"><a id="__codelineno-49-3" name="__codelineno-49-3" href="#__codelineno-49-3"></a>
+</span><span id="__span-49-4"><a id="__codelineno-49-4" name="__codelineno-49-4" href="#__codelineno-49-4"></a>  naturezas &lt;- c(...)
+</span><span id="__span-49-5"><a id="__codelineno-49-5" name="__codelineno-49-5" href="#__codelineno-49-5"></a>  incluir &lt;- which(naturezas &gt; 0)    # indica com TRUE os índices onde &quot;naturezas&quot; é positivo
+</span><span id="__span-49-6"><a id="__codelineno-49-6" name="__codelineno-49-6" href="#__codelineno-49-6"></a>  excluir &lt;- which(!naturezas &gt; 0)    # indica com TRUE os índices onde &quot;naturezas&quot; não é positivo
+</span><span id="__span-49-7"><a id="__codelineno-49-7" name="__codelineno-49-7" href="#__codelineno-49-7"></a>  naturezas &lt;- format(abs(naturezas), scientific = FALSE, trim = TRUE)    # valor absoluto de &quot;naturezas&quot;
+</span><span id="__span-49-8"><a id="__codelineno-49-8" name="__codelineno-49-8" href="#__codelineno-49-8"></a>
+</span><span id="__span-49-9"><a id="__codelineno-49-9" name="__codelineno-49-9" href="#__codelineno-49-9"></a>  n_list &lt;- lapply(naturezas, nchar)    # lista nomeada, em que o nome é &quot;naturezas&quot; e o valor é &quot;nchar&quot; (número de caracteres)
+</span><span id="__span-49-10"><a id="__codelineno-49-10" name="__codelineno-49-10" href="#__codelineno-49-10"></a>
+</span><span id="__span-49-11"><a id="__codelineno-49-11" name="__codelineno-49-11" href="#__codelineno-49-11"></a>  # Por exemplo, se &quot;naturezas&quot; = &quot;799099111&quot; e &quot;receita_cod&quot; = c(&quot;1922990199000&quot;, &quot;7990991113001&quot;), então &quot;substrings&quot; = c(&quot;192299019&quot;, &quot;799099111&quot;)
+</span><span id="__span-49-12"><a id="__codelineno-49-12" name="__codelineno-49-12" href="#__codelineno-49-12"></a>  substrings &lt;- Map(substr, list(receita_cod), 1, n_list)    # extrai os primeiros caracteres do &quot;receita_cod&quot; (do mesmo tamanho de &quot;naturezas&quot;)
+</span><span id="__span-49-13"><a id="__codelineno-49-13" name="__codelineno-49-13" href="#__codelineno-49-13"></a>
+</span><span id="__span-49-14"><a id="__codelineno-49-14" name="__codelineno-49-14" href="#__codelineno-49-14"></a>  # Por exemplo, considerando &quot;substrings&quot; = c(&quot;192299019&quot;, &quot;799099111&quot;) e &quot;naturezas&quot; = &quot;799099111&quot;, retorna &quot;FALSE TRUE&quot;.
+</span><span id="__span-49-15"><a id="__codelineno-49-15" name="__codelineno-49-15" href="#__codelineno-49-15"></a>  testes_logicos_incluir &lt;- Map(`%in%`, substrings[incluir], naturezas[incluir])    # retorna uma lista com o vetor lógico de cada natureza (positiva) indicando se os elementos de &quot;substrings[incluir]&quot; estão dentro de &quot;naturezas[incluir]&quot;
+</span><span id="__span-49-16"><a id="__codelineno-49-16" name="__codelineno-49-16" href="#__codelineno-49-16"></a>  testes_logicos_excluir &lt;- Map(`%in%`, substrings[excluir], naturezas[excluir])    # retorna uma lista com o vetor lógico de cada natureza (negativa) indicando se os elementos de &quot;substrings[excluir]&quot; estão dentro de &quot;naturezas[excluir]&quot;
+</span><span id="__span-49-17"><a id="__codelineno-49-17" name="__codelineno-49-17" href="#__codelineno-49-17"></a>
+</span><span id="__span-49-18"><a id="__codelineno-49-18" name="__codelineno-49-18" href="#__codelineno-49-18"></a>  # Transforma em um vetor lógico, combinando o vetor de cada natureza, com a condição de &quot;OU&quot;.
+</span><span id="__span-49-19"><a id="__codelineno-49-19" name="__codelineno-49-19" href="#__codelineno-49-19"></a>  # Ou seja, é um vetor lógico dizendo quais códigos devem ser incluídos e quais devem ser excluídos
+</span><span id="__span-49-20"><a id="__codelineno-49-20" name="__codelineno-49-20" href="#__codelineno-49-20"></a>  logico_incluir &lt;- Reduce(`|`, testes_logicos_incluir)
+</span><span id="__span-49-21"><a id="__codelineno-49-21" name="__codelineno-49-21" href="#__codelineno-49-21"></a>  logico_excluir &lt;- Reduce(`|`, testes_logicos_excluir)
+</span><span id="__span-49-22"><a id="__codelineno-49-22" name="__codelineno-49-22" href="#__codelineno-49-22"></a>
+</span><span id="__span-49-23"><a id="__codelineno-49-23" name="__codelineno-49-23" href="#__codelineno-49-23"></a>  if(is.null(logico_excluir))    # se não há naturezas negativas
+</span><span id="__span-49-24"><a id="__codelineno-49-24" name="__codelineno-49-24" href="#__codelineno-49-24"></a>    logico_incluir    # retorna o vetor lógico &quot;logico_incluir&quot;
+</span><span id="__span-49-25"><a id="__codelineno-49-25" name="__codelineno-49-25" href="#__codelineno-49-25"></a>  else    # se há negativas
+</span><span id="__span-49-26"><a id="__codelineno-49-26" name="__codelineno-49-26" href="#__codelineno-49-26"></a>      logico_incluir &amp; !logico_excluir   # retorna um vetor lógico, combinando &quot;logico_incluir&quot; com &quot;!logico_excluir&quot;, com a condição de &quot;E&quot;
+</span><span id="__span-49-27"><a id="__codelineno-49-27" name="__codelineno-49-27" href="#__codelineno-49-27"></a>}   # Obs.: &quot;!logico_excluir&quot; inverte os valores de &quot;logico_excluir&quot; (TRUE vira FALSE)
+</span></code></pre></div>
+<details class="note">
+<summary>nat_as_char()</summary>
+<p>"Essa funcao foi adicionada para que receitas com 10 e 13 digitos possam ser armazenadas na mesma coluna sem que o numero de caracteres de cada uma seja igual. Isso é importante para que relatorios::verifica_intervalos funcione corretamente com base no ano da receita"</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-50-1"><a id="__codelineno-50-1" name="__codelineno-50-1" href="#__codelineno-50-1"></a>nat_as_char &lt;- function(x) {
+</span><span id="__span-50-2"><a id="__codelineno-50-2" name="__codelineno-50-2" href="#__codelineno-50-2"></a>  format(as.numeric(x), scientific = FALSE, trim = TRUE)    # formato numério, sem formatação científica, justificado (remove espaços extras)
+</span><span id="__span-50-3"><a id="__codelineno-50-3" name="__codelineno-50-3" href="#__codelineno-50-3"></a>}
+</span></code></pre></div>
+</details>
+</details>
+</details>
 </details>
 </details>
 </li>
@@ -1013,26 +1533,26 @@
 <details class="note">
 <summary>code/qvw/load_bases.qvs</summary>
 <p>Quando qualquer um dos pré-requisitos for mais novo, roda o script R "config/R/load_bases.R" para gerar ou atualizar o "code/qvw/load_bases.qvs".</p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-39-1"><a id="__codelineno-39-1" name="__codelineno-39-1" href="#__codelineno-39-1"></a>code/qvw/load_bases.qvs: config/R/load_bases.R $(CONFIG)
-</span><span id="__span-39-2"><a id="__codelineno-39-2" name="__codelineno-39-2" href="#__codelineno-39-2"></a>  @echo &quot;Atualizando load_bases...&quot;
-</span><span id="__span-39-3"><a id="__codelineno-39-3" name="__codelineno-39-3" href="#__codelineno-39-3"></a>  @Rscript --verbose $&lt; 2&gt; logs/log.Rout
+<div class="language-text highlight"><pre><span></span><code><span id="__span-51-1"><a id="__codelineno-51-1" name="__codelineno-51-1" href="#__codelineno-51-1"></a>code/qvw/load_bases.qvs: config/R/load_bases.R $(CONFIG)
+</span><span id="__span-51-2"><a id="__codelineno-51-2" name="__codelineno-51-2" href="#__codelineno-51-2"></a>  @echo &quot;Atualizando load_bases...&quot;
+</span><span id="__span-51-3"><a id="__codelineno-51-3" name="__codelineno-51-3" href="#__codelineno-51-3"></a>  @Rscript --verbose $&lt; 2&gt; logs/log.Rout
 </span></code></pre></div>
 <details class="note">
 <summary>config/R/load_bases.R</summary>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-40-1"><a id="__codelineno-40-1" name="__codelineno-40-1" href="#__codelineno-40-1"></a>config &lt;- yaml::yaml.load_file(&quot;config/config.yaml&quot;)
-</span><span id="__span-40-2"><a id="__codelineno-40-2" name="__codelineno-40-2" href="#__codelineno-40-2"></a>stem &lt;- names(config$munge_base)[as.logical(config$munge_base)]
-</span><span id="__span-40-3"><a id="__codelineno-40-3" name="__codelineno-40-3" href="#__codelineno-40-3"></a>
-</span><span id="__span-40-4"><a id="__codelineno-40-4" name="__codelineno-40-4" href="#__codelineno-40-4"></a>msg_prefix &lt;- &quot;  LOAD *\n  FROM\n  data\\&quot;
-</span><span id="__span-40-5"><a id="__codelineno-40-5" name="__codelineno-40-5" href="#__codelineno-40-5"></a>
-</span><span id="__span-40-6"><a id="__codelineno-40-6" name="__codelineno-40-6" href="#__codelineno-40-6"></a>msg_suffix &lt;- &quot;.csv\n
-</span><span id="__span-40-7"><a id="__codelineno-40-7" name="__codelineno-40-7" href="#__codelineno-40-7"></a>  (txt, utf8, embedded labels, delimiter is &#39;;&#39;, msq);
-</span><span id="__span-40-8"><a id="__codelineno-40-8" name="__codelineno-40-8" href="#__codelineno-40-8"></a>  \n  CONCATENATE\n\n&quot;
-</span><span id="__span-40-9"><a id="__codelineno-40-9" name="__codelineno-40-9" href="#__codelineno-40-9"></a>
-</span><span id="__span-40-10"><a id="__codelineno-40-10" name="__codelineno-40-10" href="#__codelineno-40-10"></a>output &lt;- paste0(msg_prefix, stem, msg_suffix)
-</span><span id="__span-40-11"><a id="__codelineno-40-11" name="__codelineno-40-11" href="#__codelineno-40-11"></a>
-</span><span id="__span-40-12"><a id="__codelineno-40-12" name="__codelineno-40-12" href="#__codelineno-40-12"></a>output[length(output)] &lt;- gsub(&quot;CONCATENATE&quot;, &quot;&quot;, output[length(output)])
-</span><span id="__span-40-13"><a id="__codelineno-40-13" name="__codelineno-40-13" href="#__codelineno-40-13"></a>
-</span><span id="__span-40-14"><a id="__codelineno-40-14" name="__codelineno-40-14" href="#__codelineno-40-14"></a>write(output, file = &quot;code/qvw/load_bases.qvs&quot;)
+<div class="language-text highlight"><pre><span></span><code><span id="__span-52-1"><a id="__codelineno-52-1" name="__codelineno-52-1" href="#__codelineno-52-1"></a>config &lt;- yaml::yaml.load_file(&quot;config/config.yaml&quot;)
+</span><span id="__span-52-2"><a id="__codelineno-52-2" name="__codelineno-52-2" href="#__codelineno-52-2"></a>stem &lt;- names(config$munge_base)[as.logical(config$munge_base)]
+</span><span id="__span-52-3"><a id="__codelineno-52-3" name="__codelineno-52-3" href="#__codelineno-52-3"></a>
+</span><span id="__span-52-4"><a id="__codelineno-52-4" name="__codelineno-52-4" href="#__codelineno-52-4"></a>msg_prefix &lt;- &quot;  LOAD *\n  FROM\n  data\\&quot;
+</span><span id="__span-52-5"><a id="__codelineno-52-5" name="__codelineno-52-5" href="#__codelineno-52-5"></a>
+</span><span id="__span-52-6"><a id="__codelineno-52-6" name="__codelineno-52-6" href="#__codelineno-52-6"></a>msg_suffix &lt;- &quot;.csv\n
+</span><span id="__span-52-7"><a id="__codelineno-52-7" name="__codelineno-52-7" href="#__codelineno-52-7"></a>  (txt, utf8, embedded labels, delimiter is &#39;;&#39;, msq);
+</span><span id="__span-52-8"><a id="__codelineno-52-8" name="__codelineno-52-8" href="#__codelineno-52-8"></a>  \n  CONCATENATE\n\n&quot;
+</span><span id="__span-52-9"><a id="__codelineno-52-9" name="__codelineno-52-9" href="#__codelineno-52-9"></a>
+</span><span id="__span-52-10"><a id="__codelineno-52-10" name="__codelineno-52-10" href="#__codelineno-52-10"></a>output &lt;- paste0(msg_prefix, stem, msg_suffix)
+</span><span id="__span-52-11"><a id="__codelineno-52-11" name="__codelineno-52-11" href="#__codelineno-52-11"></a>
+</span><span id="__span-52-12"><a id="__codelineno-52-12" name="__codelineno-52-12" href="#__codelineno-52-12"></a>output[length(output)] &lt;- gsub(&quot;CONCATENATE&quot;, &quot;&quot;, output[length(output)])
+</span><span id="__span-52-13"><a id="__codelineno-52-13" name="__codelineno-52-13" href="#__codelineno-52-13"></a>
+</span><span id="__span-52-14"><a id="__codelineno-52-14" name="__codelineno-52-14" href="#__codelineno-52-14"></a>write(output, file = &quot;code/qvw/load_bases.qvs&quot;)
 </span></code></pre></div>
 </details>
 </details>
@@ -1040,22 +1560,22 @@
 </ul>
 <h2 id="munge">munge<a class="headerlink" href="#munge" title="Permanent link">&para;</a></h2>
 <p>Ao executar o <code>make build</code>, o make executa tudo que for necessário para o alvo <code>munge</code>, no caso, atualizar os .csv, além de atualizar <code>metadados.csv</code>, <code>testes.csv</code> e <code>load_bases.qvs</code>.</p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-41-1"><a id="__codelineno-41-1" name="__codelineno-41-1" href="#__codelineno-41-1"></a>build: munge data/metadados.csv data/testes.csv code/qvw/load_bases.qvs
-</span><span id="__span-41-2"><a id="__codelineno-41-2" name="__codelineno-41-2" href="#__codelineno-41-2"></a>    @echo
-</span><span id="__span-41-3"><a id="__codelineno-41-3" name="__codelineno-41-3" href="#__codelineno-41-3"></a>    @echo &quot;Build completo.&quot;
-</span><span id="__span-41-4"><a id="__codelineno-41-4" name="__codelineno-41-4" href="#__codelineno-41-4"></a>    @echo &quot;-----------------------------------------------------&quot;
+<div class="language-text highlight"><pre><span></span><code><span id="__span-53-1"><a id="__codelineno-53-1" name="__codelineno-53-1" href="#__codelineno-53-1"></a>build: munge data/metadados.csv data/testes.csv code/qvw/load_bases.qvs
+</span><span id="__span-53-2"><a id="__codelineno-53-2" name="__codelineno-53-2" href="#__codelineno-53-2"></a>    @echo
+</span><span id="__span-53-3"><a id="__codelineno-53-3" name="__codelineno-53-3" href="#__codelineno-53-3"></a>    @echo &quot;Build completo.&quot;
+</span><span id="__span-53-4"><a id="__codelineno-53-4" name="__codelineno-53-4" href="#__codelineno-53-4"></a>    @echo &quot;-----------------------------------------------------&quot;
 </span></code></pre></div>
 <p>O alvo <code>munge</code>, por sua vez depende da lista <code>$(MUNGE_FILES)</code>.</p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-42-1"><a id="__codelineno-42-1" name="__codelineno-42-1" href="#__codelineno-42-1"></a>munge: $(MUNGE_FILES)
-</span><span id="__span-42-2"><a id="__codelineno-42-2" name="__codelineno-42-2" href="#__codelineno-42-2"></a>    @echo
-</span><span id="__span-42-3"><a id="__codelineno-42-3" name="__codelineno-42-3" href="#__codelineno-42-3"></a>    @echo &quot;Munging completo.&quot;
-</span><span id="__span-42-4"><a id="__codelineno-42-4" name="__codelineno-42-4" href="#__codelineno-42-4"></a>    @echo &quot;-----------------------------------------------------&quot;
+<div class="language-text highlight"><pre><span></span><code><span id="__span-54-1"><a id="__codelineno-54-1" name="__codelineno-54-1" href="#__codelineno-54-1"></a>munge: $(MUNGE_FILES)
+</span><span id="__span-54-2"><a id="__codelineno-54-2" name="__codelineno-54-2" href="#__codelineno-54-2"></a>    @echo
+</span><span id="__span-54-3"><a id="__codelineno-54-3" name="__codelineno-54-3" href="#__codelineno-54-3"></a>    @echo &quot;Munging completo.&quot;
+</span><span id="__span-54-4"><a id="__codelineno-54-4" name="__codelineno-54-4" href="#__codelineno-54-4"></a>    @echo &quot;-----------------------------------------------------&quot;
 </span></code></pre></div>
 <p>O alvo <code>$(MUNGE_FILES)</code>, por sua vez, tem como alvo <code>data/%.csv</code>, que depende de <code>code/R/munge/%.R</code>, um script R correspondente, de <code>data-raw/%.xlsx</code>, uma planilha fonte, e de <code>$(CONFIG)</code> e <code>$(LIB)</code>, outras dependências comuns, definidas em outra parte do makefile.</p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-43-1"><a id="__codelineno-43-1" name="__codelineno-43-1" href="#__codelineno-43-1"></a>$(MUNGE_FILES): data/%.csv: code/R/munge/%.R data-raw/%.xlsx $(CONFIG) $(LIB)
-</span><span id="__span-43-2"><a id="__codelineno-43-2" name="__codelineno-43-2" href="#__codelineno-43-2"></a>    @Rscript --verbose config/R/check_pkg_version.R 2&gt; logs/log.Rout
-</span><span id="__span-43-3"><a id="__codelineno-43-3" name="__codelineno-43-3" href="#__codelineno-43-3"></a>    @echo &quot;Atualizando $*...&quot;
-</span><span id="__span-43-4"><a id="__codelineno-43-4" name="__codelineno-43-4" href="#__codelineno-43-4"></a>    @Rscript --verbose $&lt; 2&gt; logs/log.Rout
+<div class="language-text highlight"><pre><span></span><code><span id="__span-55-1"><a id="__codelineno-55-1" name="__codelineno-55-1" href="#__codelineno-55-1"></a>$(MUNGE_FILES): data/%.csv: code/R/munge/%.R data-raw/%.xlsx $(CONFIG) $(LIB)
+</span><span id="__span-55-2"><a id="__codelineno-55-2" name="__codelineno-55-2" href="#__codelineno-55-2"></a>    @Rscript --verbose config/R/check_pkg_version.R 2&gt; logs/log.Rout
+</span><span id="__span-55-3"><a id="__codelineno-55-3" name="__codelineno-55-3" href="#__codelineno-55-3"></a>    @echo &quot;Atualizando $*...&quot;
+</span><span id="__span-55-4"><a id="__codelineno-55-4" name="__codelineno-55-4" href="#__codelineno-55-4"></a>    @Rscript --verbose $&lt; 2&gt; logs/log.Rout
 </span></code></pre></div>
 <ul>
 <li>

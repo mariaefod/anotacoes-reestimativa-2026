@@ -757,7 +757,7 @@ code/qvw/load_bases.qvs: config/R/load_bases.R $(CONFIG)
 
         ??? note "tests/test.R"
 
-            Obs.: os arquivos "helper_test_equal" e "helper_test_greater" possuem uma função ("test_equal()" e "test_greater_than()") que cria um data frame com os resultados do teste e empilha este data frame dentro da lista "resultado_testes".
+            Obs.: os arquivos "helper_test_equal.R" e "helper_test_greater.R" possuem uma função ("test_equal()" e "test_greater_than()") que cria um data frame com os resultados do teste e empilha este data frame dentro da lista "resultado_testes".
 
             ```
             config <- yaml::yaml.load_file("config/config.yaml")    # lê o arquivo "config.yaml"
@@ -767,12 +767,12 @@ code/qvw/load_bases.qvs: config/R/load_bases.R $(CONFIG)
 
               helper_files <- list.files("tests/test/", pattern = "^helper_")    # lista os arquivos que começam com "helper_" na pasta "tests/test/"
               helper_paths <- paste0("tests/test/", helper_files)    # escreve o caminho desses arquivos
-              invisible(Map(source, helper_paths, encoding = "UTF-8"))    # dá "source()" em cada helper
+              invisible(Map(source, helper_paths, encoding = "UTF-8"))    # dá "source()" em cada helper (executa os arquivos)
 
               stem <- names(config$test$tests)[as.logical(config$test$tests)]    # filtra as bases marcadas como ativas do "test: tests:"
               stem <- c(config$test$base, stem)    # adiciona "reest" na lista de nomes (pois "base: reest")
               files <- paste0("tests/test/test_", stem, ".R")    # escreve o caminho desses arquivos .R
-              invisible(Map(source, files, encoding = "UTF-8"))    # dá "source()" em cada "test_*.R" ativado
+              invisible(Map(source, files, encoding = "UTF-8"))    # dá "source()" em cada "test_*.R" ativado (executa os arquivos)
 
               output <- data.table::rbindlist(resultado_testes, fill = TRUE)    # empilha as entradas da lista "resultado_testes" em um único data.frame
 
@@ -782,6 +782,555 @@ code/qvw/load_bases.qvs: config/R/load_bases.R $(CONFIG)
 
             write.csv2(output, file = "data/testes.csv", row.names = F, na = "", fileEncoding = "UTF-8")    # escreve "data/testes.csv" com os resultados dos "helper_*.R" e "test_*.R"
             ```
+
+            ??? note "helper_dados.R"
+                Cria as tabelas "rec" e "desp" no ambiente "base".
+
+                Essas tabelas são criadas considerando o valor da subchave "test: base:".
+
+                Por exemplo, caso seja "reest", irá procurar na pasta "data/" os arquivos "reest_rec.csv" e "reest_desp.csv.
+
+                Assim, irá criar duas data.tables com o conteúdos desses .csv.
+
+                ```
+                library(reest)
+
+                config <- yaml::yaml.load_file("config/config.yaml")    # lê o arquivo "config.yaml"
+                base <- new.env()    # cria um novo ambiente usado para armazenar duas tabelas padronizadas ("rec" e "desp")
+
+                run_dados_exec <- function() {
+                  assign("rec", ler_exec_rec("data/exec_rec.csv"), envir = base)    # lê o "exec_rec.csv" como data.table, renomeando as colunas, e atribui em base$rec
+                  data.table::setnames(base$rec, "VL_EFET_AJUST", "VL_REC")    # renomeia VL_EFET_AJUST → VL_REC
+                  assign("desp", ler_exec_desp("data/exec_desp.csv"), envir = base)    # lê o "exec_desp.csv" como data.table, renomeando as colunas, e atribui em base$desp
+                  data.table::setnames(base$desp, "VL_EMP", "VL_DESP")    # renomeia VL_EMP → VL_DESP
+                }
+
+                run_dados_ldo <- function() {
+                  assign("rec", ler_reest_rec("data/ldo_rec.csv"), envir = base)    # lê o "ldo_rec.csv" como data.table e atribui em base$rec
+                  data.table::setnames(base$rec, "VL_LDO_REC", "VL_REC")    # renomeia VL_LDO_REC → VL_REC
+                  assign("desp", ler_reest_desp("data/ldo_desp.csv"), envir = base)    # lê o "ldo_desp.csv" como data.table e atribui em base$desp
+                  data.table::setnames(base$desp, "VL_LDO_DESP", "VL_DESP")    # renomeia VL_LDO_DESP → VL_DESP
+                }
+
+                run_dados_loa <- function() {
+                  assign("rec", ler_loa_rec("data/loa_rec.csv"), envir = base)    # lê o "loa_rec.csv" como data.table, renomeando as colunas, e atribui em base$rec
+                  data.table::setnames(base$rec, "VL_LOA_REC", "VL_REC")    # renomeia VL_LOA_REC → VL_REC
+                  assign("desp", ler_loa_desp("data/loa_desp.csv"), envir = base)    # lê o "loa_desp.csv" como data.table, renomeando as colunas, e atribui em base$desp
+                  data.table::setnames(base$desp, "VL_LOA_DESP", "VL_DESP")    # renomeia VL_LOA_DESP → VL_DESP
+                }
+
+                run_dados_reest <- function() {
+                  assign("rec", ler_reest_rec("data/reest_rec.csv"), envir = base)    # lê o "reest_rec.csv" como data.table e atribui em base$rec
+                  data.table::setnames(base$rec, "VL_REEST_REC", "VL_REC")    # renomeia VL_REEST_REC → VL_REC
+                  assign("desp", ler_reest_desp("data/reest_desp.csv"), envir = base)    # lê o "reest_desp.csv" como data.table e atribui em base$desp
+                  data.table::setnames(base$desp, "VL_REEST_DESP", "VL_DESP")    # renomeia VL_REEST_DESP → VL_DESP
+                }
+
+                config$test$base <- tolower(config$test$base)    # transforma o valor da subchave "base" (no caso, "reest") em minúsculo
+                stopifnot(config$test$base %in% c("exec", "ldo", "loa", "reest"))    # se a base não for "exec", "ldo", "loa" ou "reest", dispara erro
+                switch (config$test$base,
+                  "exec" = run_dados_exec(),    # se for "exec", lê "data/exec_rec.csv" e "data/exec_desp.csv"
+                  "ldo" = run_dados_ldo(),    # se for "ldo", lê "data/ldo_rec.csv" e "data/ldo_desp.csv"
+                  "loa" = run_dados_loa(),    # se for "loa", lê "loa_rec.csv" e "loa_desp.csv"
+                  "reest" = run_dados_reest()    # se for "reest", lê "reest_rec.csv" e "reest_desp.csv"
+                )
+
+                lockEnvironment(base, bindings = TRUE)    # não permite mais reatribuir base$rec ou base$desp, nem criar/remover objetos nesse ambiente
+                ```
+
+                ??? note "ler_exec_rec()"
+                    Altera nome das colunas e salva como "data.table".
+
+                    Só aceita .csv ou .xlsx.
+
+                    ```
+                    ler_exec_rec <- function(path) {
+                      #browser()
+                      cols <- c(
+                        `Ano de Exercício` = "ANO",
+                        `Mês - Numérico` = "MES_COD",
+                        `Unidade Orçamentária - Código` = "UO_COD",
+                        `Unidade Orçamentária - Sigla` = "UO_SIGLA",
+                        `Classificação Receita - Código` = "RECEITA_COD",
+                        `Classificação Receita - Descrição` = "RECEITA_DESC",
+                        `Fonte Recurso - Código` = "FONTE_COD",
+                        `Fonte Recurso - Descrição` = "FONTE_DESC",
+                        `Valor Previsto Inicial` = "VL_PREV_INICIAL",
+                        `Valor Efetivado Ajustado` = "VL_EFET_AJUST"
+                      )
+
+                      excel <- grepl(pattern = "(.xlsx$)|(.xls$)|(.xlsm$)", path, ignore.case = TRUE)
+                      csv <- grepl(pattern = ".csv$", path, ignore.case = TRUE)
+
+                      if(excel) {
+                        base <- data.table(read_excel(path))
+                      } else if(csv) {
+                        base <- data.table(read.csv2(path, stringsAsFactors = FALSE,  check.names = FALSE))
+                      } else {
+                        stop("Extensao invalida de arquivo.")
+                      }
+
+                      base <- check_base(base, cols)
+
+                      return(base)
+                    }
+                    ```
+
+                ??? note "ler_exec_desp()"
+                    Altera nome das colunas e salva como "data.table".
+
+                    Só aceita .csv ou .xlsx.
+
+                    ```
+                    ler_exec_desp <- function(path) {
+
+                      cols <- c(
+                        `Ano de Exercício` = "ANO",
+                        `Mês - Numérico` = "MES_COD",
+                        `Unidade Orçamentária - Código` = "UO_COD",
+                        `Unidade Orçamentária - Sigla` = "UO_SIGLA",
+                        `Poder Unid Orçamentária - Código` = "PODER_COD",
+                        `Poder Unid Orçamentária - Desc` = "PODER_DESC",
+                        `Função - Código` = "FUNCAO_COD",
+                        `Função - Descrição` = "FUNCAO_DESC",
+                        `Subfunção - Código` = "SUBFUNCAO_COD",
+                        `Subfunção - Descrição` = "SUBFUNCAO_DESC",
+                        `Programa - Código` = "PROGRAMA_COD",
+                        `Programa - Descrição` = "PROGRAMA_DESC",
+                        `Projeto_Atividade - Código` = "ACAO_COD",
+                        `Projeto_Atividade - Descrição` = "ACAO_DESC",
+                        `Categoria Econômica Despesa -Código` = "CATEGORIA_COD",
+                        `Categoria Econômica Despesa - Desc` = "CATEGORIA_DESC",
+                        `Grupo Despesa - Código` = "GRUPO_COD",
+                        `Grupo Despesa - Descrição` = "GRUPO_DESC",
+                        `Modalidade Aplicação - Código` = "MODALIDADE_COD",
+                        `Modalidade Aplicação - Descrição` = "MODALIDADE_DESC",
+                        `Elemento Despesa - Código` = "ELEMENTO_COD",
+                        `Elemento Despesa - Descrição` = "ELEMENTO_DESC",
+                        `Item Despesa - Código` = "ITEM_COD",
+                        `Item Despesa - Descrição` = "ITEM_DESC",
+                        `Elemento Item Despesa - Código` = "ELEMENTO_ITEM_COD",
+                        `Elemento Item Despesa - Descrição` = "ELEMENTO_ITEM_DESC",
+                        `Fonte Recurso - Código` = "FONTE_COD",
+                        `Fonte Recurso - Descrição` = "FONTE_DESC",
+                        `Identificador Orçamento - Código` = "IAG_COD",
+                        `Procedência - Código` = "IPU_COD",
+                        `Procedência - Descrição` = "IPU_DESC",
+                        `Valor Despesa Empenhada` = "VL_EMP",
+                        `Valor Despesa Liquidada` = "VL_LIQ",
+                        `Valor Pago Financeiro` = "VL_PAGO_FIN",
+                        `Valor Pago Orçamentário` = "VL_PAGO_ORC"
+                      )
+
+                      excel <- grepl(pattern = "(.xlsx$)|(.xls$)|(.xlsm$)", path, ignore.case = TRUE)
+                      csv <- grepl(pattern = ".csv$", path, ignore.case = TRUE)
+
+                      if(excel) {
+                        sheets <- excel_sheets(path)
+                        regex <- "\\([0-9]+\\)$"
+                        matched <- grepl(regex, sheets)
+                        raiz <- unique(sub(regex, "", sheets[matched]))
+
+                        stopifnot(length(raiz) <= 1)
+
+                        if(length(raiz)==0)
+                          sheets <- sheets[1] else
+                          sheets <- sheets[grepl(paste0("^",raiz), sheets)]
+
+                        col_names <- c(list(TRUE), rep(list(FALSE), length(sheets) - 1))
+
+                        base_raw <- Map(read_excel, path = path, sheet = sheets, na = "NA", col_names = col_names)
+                        base <- rbindlist(base_raw)
+                      } else if(csv) {
+                        base <- data.table(read.csv2(path, stringsAsFactors = FALSE,  check.names = FALSE))
+                      } else {
+                        stop("Extensao de arquivo invalida.")
+                      }
+
+                      base <- check_base(base, cols)
+                      return(base)
+                    }
+                    ```
+
+                ??? note "ler_reest_rec()"
+                    Salva como "data.table".
+
+                    Só aceita .csv ou .xlsx.
+
+                    ```
+                    ler_reest_rec <- function(path) {
+
+                      cols <- NA_character_ # nao e necessario ajustas nomes das colunas da base reest
+
+                      excel <- grepl(pattern = "(.xlsx$)|(.xls$)|(.xlsm$)", path, ignore.case = TRUE)
+                      csv <- grepl(pattern = ".csv$", path, ignore.case = TRUE)
+
+                      if(excel) {
+                        base <- data.table(read_excel(path, na = "NA", sheet = "base"))
+                      } else if(csv) {
+                        base <- data.table(read.csv2(path, stringsAsFactors = FALSE,  check.names = FALSE))
+                      } else {
+                        stop("Extensao invalida de arquivo.")
+                      }
+
+                      base <- check_base(base, cols)
+
+                      return(base)
+                    }
+                    ```
+
+                ??? note "ler_reest_desp"
+                    Salva como "data.table".
+
+                    Só aceita .csv ou .xlsx.
+
+                    ```
+                    ler_reest_desp <- function(path) {
+
+                      cols <- NA_character_ # nao e necessario ajustas nomes das colunas da base reest
+
+                      excel <- grepl(pattern = "(.xlsx$)|(.xls$)|(.xlsm$)", path, ignore.case = TRUE)
+                      csv <- grepl(pattern = ".csv$", path, ignore.case = TRUE)
+
+                      if(excel) {
+                        base <- data.table(read_excel(path, na = "NA", sheet = "base"))
+                      } else if(csv) {
+                        base <- data.table(read.csv2(path, stringsAsFactors = FALSE,  check.names = FALSE))
+                      } else {
+                        stop("Extensao invalida de arquivo.")
+                      }
+
+                      base <- check_base(base, cols)
+
+                      return(base)
+                    }
+                    ```
+
+                ??? note "ler_loa_rec()"
+                    Altera nome das colunas e salva como "data.table".
+
+                    Só aceita .csv ou .xlsx.
+
+                    ```
+                    ler_loa_rec <- function(path) {
+
+                      cols <- c(
+                        `COD_UO` = "UO_COD",
+                        `NOME_UO` = "UO_DESC",
+                        `SIGLA_UO` = "UO_SIGLA",
+                        `COD_FONTE` = "FONTE_COD",
+                        `FONTE` = "FONTE_DESC",
+                        `INTERPRETACAO` = "INTERPRETACAO",
+                        `CATEGORIA` = "CATEGORIA_COD",
+                        `SUBCATEGORIA` = "SUBCATEGORIA_COD",
+                        `FONTE_CLAS` = "FONTE_REC_COD",
+                        `RUBRICA` = "RUBRICA_COD",
+                        `ALINEA` = "ALINEA_COD",
+                        `SUBALINEA` = "SUBALINEA_COD",
+                        `ITEM` = "ITEM_COD",
+                        `COD_RECEITA` = "RECEITA_COD",
+                        `RECEITA` = "RECEITA_DESC",
+                        `INTERP_RECEITA` = "INTERP_RECEITA",
+                        `VALOR UO (R$)` = "VL_LOA_REC_UO",
+                        `VALOR SCPPO (R$)` = "VL_LOA_REC_SCPPO",
+                        `VALOR FINAL (R$)` = "VL_LOA_REC",
+                        `ANO` = "ANO",
+                        `BASE LEGAL` = "BASE_LEGAL",
+                        `METODOLOGIA DE CÁLCULO E PREMISSAS UTILIZADAS` = "MEMORIA_CALCULO"
+                      )
+
+                      excel <- grepl(pattern = "(.xlsx$)|(.xls$)|(.xlsm$)", path, ignore.case = TRUE)
+                      csv <- grepl(pattern = ".csv$", path, ignore.case = TRUE)
+
+                      if(excel) {
+                        base <- data.table(read_excel(path))
+                      } else if(csv) {
+                        base <- data.table(read.csv2(path, stringsAsFactors = FALSE,  check.names = FALSE))
+                      } else {
+                        stop("Extensao invalida de arquivo.")
+                      }
+
+                      base <- check_base(base, cols)
+
+                      return(base)
+                    }
+                    ```
+
+                ??? note "ler_loa_desp()"
+                    Altera nome das colunas e salva como "data.table".
+
+                    Só aceita .csv ou .xlsx.
+
+                    ```
+                    ler_loa_desp <- function(path) {
+
+                      cols <- c(
+                        # colunas base qdd fiscal
+                        `ANO` = "ANO",
+                        `COD_ORGAO` = "ORGAO_COD",
+                        `ORGAO` = "ORGAO_DESC",
+                        `PODER` = "PODER_COD",
+                        `SITUACAO` = "SITUACAO",
+                        `COD_UO` = "UO_COD",
+                        `UO` = "UO_DESC",
+                        `CATEGORIA` = "CATEGORIA_COD",
+                        `GRUPO_DESPESA` = "GRUPO_COD",
+                        `MODALIDADE` = "MODALIDADE_COD",
+                        `ELEMENTO_DESPESA` = "ELEMENTO_COD",
+                        `FONTE` = "FONTE_COD",
+                        `IPU` = "IPU_COD",
+                        `SEQ_PROGTRAB` = "SEQ_PROGTRAB",
+                        `FUNCAO` = "FUNCAO_COD",
+                        `SUB_FUNCAO` = "SUBFUNCAO_COD",
+                        `PROGRAMA` = "PROGRAMA_COD",
+                        `IDENT_PROJATIV` = "IDENT_PROJ_ATIV_COD",
+                        `PROJ_ATIV` = "PROJ_ATIV_COD",
+                        `AÇÃO` = "ACAO_COD",
+                        `SUB_PROJETO` = "SUBPROJETO_COD",
+                        `VALOR UO (R$)` = "VL_LOA_DESP_UO",
+                        `VALOR SCPPO (R$)` = "VL_LOA_DESP_SCPPO",
+                        `VALOR FINAL (R$)` = "VL_LOA_DESP",
+                        `IAG` = "IAG_COD",
+                        `NOME_ACAO` = "ACAO_DESC",
+                        `NOME_PROGRAMA` = "PROGRAMA_DESC",
+                        # colunas base elemento item
+                        `Código do Órgão` = "ORGAO_COD",
+                        `Órgão` = "ORGAO_DESC",
+                        `Código da UO` = "UO_COD",
+                        `Unidade Orçamentária` = "UO_DESC",
+                        `Função` = "FUNCAO_COD",
+                        `Subfunção` = "SUBFUNCAO_COD",
+                        `Programa` = "PROGRAMA_COD",
+                        `Identificador` = "IDENT_PROJ_ATIV_COD",
+                        `Projeto_Atividade` = "PROJ_ATIV_COD",
+                        `Ação` = "ACAO_COD",
+                        `Subprojeto` = "SUBPROJETO_COD",
+                        `Categoria` = "CATEGORIA_COD",
+                        `Grupo_Despesa` = "GRUPO_COD",
+                        `Modalidade` = "MODALIDADE_COD",
+                        `Elemento_Despesa` = "ELEMENTO_COD",
+                        `Item_Despesa` = "ITEM_COD",
+                        `Fonte` = "FONTE_COD",
+                        `IPU` = "IPU_COD",
+                        `IAG` = "IAG_COD",
+                        `Descrição` = "ACAO_DESC",
+                        `Valor (R$)` = "VL_LOA_DESP"
+                      )
+
+                      excel <- grepl(pattern = "(.xlsx$)|(.xls$)|(.xlsm$)", path, ignore.case = TRUE)
+                      csv <- grepl(pattern = ".csv$", path, ignore.case = TRUE)
+
+                      if(excel) {
+                        base <- data.table(read_excel(path))
+                      } else if(csv) {
+                        base <- data.table(read.csv2(path, stringsAsFactors = FALSE,  check.names = FALSE))
+                      } else {
+                        stop("Extensao invalida de arquivo.")
+                      }
+
+                      base <- check_base(base, cols)
+
+                      return(base)
+
+                    }
+                    ```
+
+            ??? note "helper_test_equal.R"
+                Valida se "x + adj_x" é igual a "y + adj_y" (sem considerar decimais).
+
+                Formata os valores "x", "y", "adj_x", "adj_y" e "diff".
+
+                Retorna uma data.table com as colunas "CONTEXTO", "DESC", "RESULTADO", "DIFF_MSG", "VALOR_X", "VALOR_Y", "AJUSTE_X", "AJUSTE_Y" e "DESC_AJUSTE".
+
+                Acrescenta esse data.frame à lista "resultado_testes"
+
+                ```
+                test_equal <- function(x, y,
+                                       adj_x = 0, adj_y = 0,
+                                       descricao = "",
+                                       contexto = "",
+                                       desc_adj = "",
+                                       label_x = "Receita", label_y = "Despesa"
+                                      ) {
+
+                  # Calcula resultado do teste
+                  diff <- round(x + adj_x, 0) - round(y + adj_y, 0)    # soma "x"/"y" com "adj_x"/"adj_y", arredonda os resultados sem decimal e calcula diferença entre eles
+                  resultado <- ifelse(diff == 0, TRUE, FALSE)    # se diff estiver zerado, define TRUE, se não, FALSE
+
+                  # Formata valores: divide milhar por ".", decimal por ",", duas casas decimais
+                  pretty_x <- format(x, big.mark = ".", decimal.mark = ",", nsmall = 2)
+                  pretty_y <- format(y, big.mark = ".", decimal.mark = ",", nsmall = 2)
+
+                  pretty_adj_x <- format(adj_x, big.mark = ".", decimal.mark = ",", nsmall = 2)
+                  pretty_adj_y <- format(adj_y, big.mark = ".", decimal.mark = ",", nsmall = 2)
+
+                  pretty_diff <- format(abs(diff), big.mark = ".", decimal.mark = ",", nsmall = 2)
+
+                  # Cria mensagem em caso teste negativo (diff diferente de "0")
+                  msg <- ifelse(diff > 0,
+                                    paste(label_x, "maior que", label_y , "em R$", pretty_diff),
+                                    ifelse(diff < 0,
+                                            paste(label_x, "menor que", label_y , "em R$", pretty_diff), "ok"))
+
+                  # Output: cria um data.frame com as colunas formatadas
+                  output <- data.frame(CONTEXTO = contexto,
+                                      DESC = descricao,
+                                      RESULTADO = resultado,
+                                      DIFF_MSG = msg,
+                                      VALOR_X = pretty_x,
+                                      VALOR_Y = pretty_y,
+                                      AJUSTE_X = pretty_adj_x,
+                                      AJUSTE_Y = pretty_adj_y,
+                                      DESC_AJUSTE = desc_adj)
+
+                  n <- length(resultado_testes)
+                  resultado_testes[[n+1]] <<- output    # acrescenta o data.frame à lista "resultado_testes"
+                }
+                ```
+
+            ??? note "helper_test_greater.R"
+                Valida se "x" é maior que "y".
+
+                Formata os valores "x", "y" e "diff".
+
+                Retorna uma data.table com as colunas "CONTEXTO", "DESC", "RESULTADO", "DIFF_MSG", "VALOR_X" e "VALOR_Y".
+
+                Acrescenta esse data.frame à lista "resultado_testes"
+
+                ```
+                test_greater_than <- function(x, y,
+                                              descricao = "",
+                                              contexto = "",
+                                              label_x = "Receita", label_y = "Despesa"
+                                             ) {
+
+                  # Calcula resultado do teste
+                  diff <- round(x - y, 0)    # calcula diferença entre "x" e "y" e arredonda o resultado sem decimal
+                  resultado <- ifelse(diff >= 0, TRUE, FALSE)    # se diff estiver zerado, define TRUE, se não, FALSE
+
+                  # Formata valores: divide milhar por ".", decimal por ",", duas casas decimais, sem formato científico
+                  pretty_x <- format(x, big.mark = ".", decimal.mark = ",", nsmall = 2,
+                                      scientific = FALSE)
+                  pretty_y <- format(y, big.mark = ".", decimal.mark = ",", nsmall = 2,
+                                      scientific = FALSE)
+
+                  pretty_diff <- format(abs(diff), big.mark = ".", decimal.mark = ",", nsmall = 2,
+                                        scientific = FALSE)
+
+                  # Cria mensagem em caso teste negativo (diff negativa)
+                  msg <- ifelse(diff < 0,
+                                    paste(label_y, "maior que", label_x, "em R$", pretty_diff), "ok")
+
+                  # Output: cria um data.frame com as colunas formatadas
+                  output <- data.frame(CONTEXTO = contexto,
+                                      DESC = descricao,
+                                      RESULTADO = resultado,
+                                      DIFF_MSG = msg,
+                                      VALOR_X = pretty_x,
+                                      VALOR_Y = pretty_y)
+
+                  n <- length(resultado_testes)
+                  resultado_testes[[n+1]] <<- output    # acrescenta o data.frame à lista "resultado_testes"
+                }
+                ```
+
+            ??? note "test_complementacao.R"
+                Obs.: há mais conteúdo, mas ficaria muito grande, então peguei o primeiro exemplo de cada caso
+
+                ```
+                library(relatorios)
+                #====================================================================
+                # Receita vs Complementacao
+
+                # Por exemplo, com base no arquivo "data/reest_rec.csv"
+                x <- base$rec[nat(RECEITA_COD, 7999992114), sum(VL_REC)]
+
+                y <- base$desp[ACAO_COD == 7009,
+                              sum(VL_DESP)]
+
+                test_equal(x, y,
+                          label_x = "Receita (MATRIZ 799099111)",
+                          label_y = "Complementa��o (ACAO 7009)",
+                          descricao = "Receita vs Complementa��o",
+                          contexto = "Complementa��o")
+
+                #====================================================================
+                # Receita vs Inativos
+
+                # EXECUTIVO
+                x <- base$rec[nat(RECEITA_COD, 7999992114001, 1922990199000) & FONTE_COD == 58,
+                              sum(VL_REC)]
+
+                y <- base$desp[UO_COD == 4711 & FONTE_COD == 58,
+                              sum(VL_DESP)]
+
+                test_equal(x, y,
+                          label_x = "Receita (MATRIZ 7990991113001 e 1922991199000)",
+                          label_y = "Inativos (UO 1441 e 4711)",
+                          descricao = "Receita vs Inativos - EXECUTIVO",
+                          contexto = "Complementa��o")
+
+                #====================================================================
+                # Complementacao vs Inativos
+
+                # LEMG
+                x <- base$desp[UO_COD == 2041 & ACAO_COD == 7009,
+                              sum(VL_DESP)]
+
+                y <- base$desp[UO_COD == 4711 & ACAO_COD == 7617 & FONTE_COD == 58,
+                              sum(VL_DESP)]
+
+                test_equal(x, y,
+                          label_x = "Complementa��o LEMG",
+                          label_y = "Inativos LEMG (ACAO 7617 do FFPMG)",
+                          descricao = "Complementacao vs Inativos - LEMG",
+                          contexto = "Complementa��o")
+                ```
+
+                ??? note "nat()"
+                    Retorna um vetor lógico, indicando quais "receita_cod" devem ser incluídos (TRUE).
+
+                    Ao usar a função, serão incluídas as naturezas positivas e excluídas as negativas.
+
+                    ```
+                    nat <- function(receita_cod, ...) {
+                      receita_cod <- nat_as_char(receita_cod)    # formato numério
+
+                      naturezas <- c(...)
+                      incluir <- which(naturezas > 0)    # indica com TRUE os índices onde "naturezas" é positivo
+                      excluir <- which(!naturezas > 0)    # indica com TRUE os índices onde "naturezas" não é positivo
+                      naturezas <- format(abs(naturezas), scientific = FALSE, trim = TRUE)    # valor absoluto de "naturezas"
+
+                      n_list <- lapply(naturezas, nchar)    # lista nomeada, em que o nome é "naturezas" e o valor é "nchar" (número de caracteres)
+
+                      # Por exemplo, se "naturezas" = "799099111" e "receita_cod" = c("1922990199000", "7990991113001"), então "substrings" = c("192299019", "799099111")
+                      substrings <- Map(substr, list(receita_cod), 1, n_list)    # extrai os primeiros caracteres do "receita_cod" (do mesmo tamanho de "naturezas")
+
+                      # Por exemplo, considerando "substrings" = c("192299019", "799099111") e "naturezas" = "799099111", retorna "FALSE TRUE".
+                      testes_logicos_incluir <- Map(`%in%`, substrings[incluir], naturezas[incluir])    # retorna uma lista com o vetor lógico de cada natureza (positiva) indicando se os elementos de "substrings[incluir]" estão dentro de "naturezas[incluir]"
+                      testes_logicos_excluir <- Map(`%in%`, substrings[excluir], naturezas[excluir])    # retorna uma lista com o vetor lógico de cada natureza (negativa) indicando se os elementos de "substrings[excluir]" estão dentro de "naturezas[excluir]"
+
+                      # Transforma em um vetor lógico, combinando o vetor de cada natureza, com a condição de "OU".
+                      # Ou seja, é um vetor lógico dizendo quais códigos devem ser incluídos e quais devem ser excluídos
+                      logico_incluir <- Reduce(`|`, testes_logicos_incluir)
+                      logico_excluir <- Reduce(`|`, testes_logicos_excluir)
+
+                      if(is.null(logico_excluir))    # se não há naturezas negativas
+                        logico_incluir    # retorna o vetor lógico "logico_incluir"
+                      else    # se há negativas
+                          logico_incluir & !logico_excluir   # retorna um vetor lógico, combinando "logico_incluir" com "!logico_excluir", com a condição de "E"
+                    }   # Obs.: "!logico_excluir" inverte os valores de "logico_excluir" (TRUE vira FALSE)
+                    ```
+
+                    ??? note "nat_as_char()"
+                        "Essa funcao foi adicionada para que receitas com 10 e 13 digitos possam ser armazenadas na mesma coluna sem que o numero de caracteres de cada uma seja igual. Isso é importante para que relatorios::verifica_intervalos funcione corretamente com base no ano da receita"
+
+                        ```
+                        nat_as_char <- function(x) {
+                          format(as.numeric(x), scientific = FALSE, trim = TRUE)    # formato numério, sem formatação científica, justificado (remove espaços extras)
+                        }
+                        ```
+
 
 * **code/qvw/load_bases.qvs**:
 
