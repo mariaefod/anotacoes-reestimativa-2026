@@ -408,7 +408,7 @@ code/qvw/load_bases.qvs: config/R/load_bases.R $(CONFIG)
 
     ??? note "MUNGE_FILES"
 
-        Na etapa de parse, é atribuído ao `MUNGE_FILES` a execução no terminal do scrip R "generate_munge_files.R", o qual cria um .csv dos "munge_base: yes" do arquivo "config.yaml", na pasta "data".
+        Na etapa de parse, é atribuído ao `MUNGE_FILES` a execução no terminal do scrip R "generate_munge_files.R", o qual cria um .csv (vazio) dos "munge_base: yes" do arquivo "config.yaml", na pasta "data".
 
         Além disso, direciona o "stderr" para o arquivo "log.Rout", e o "stdout" é capturado para "MUNGE_FILES".
 
@@ -502,22 +502,21 @@ code/qvw/load_bases.qvs: config/R/load_bases.R $(CONFIG)
         CONFIG := config/config.yaml
         ```
 
-* **$(MUNGE_FILES)**: se algum dos arquivos "code/R/munge/%.R", "data-raw/%.xlsx", "config.yaml" ou "code/R/lib/*.R" for mais novo que o "data/%.csv", instala/atualiza os pacotes exigidos, conforme versão especificada no "config.yaml"
+* **$(MUNGE_FILES)**: instala/atualiza pacotes exigidos, conforme versão especificada no "config.yaml", bem como cria os arquivos "data/%.csv", transformando os arquivos "data-raw/%.xlsx"
 
     ??? note "$(MUNGE_FILES)"
+        Define como gerar arquivos "data/%.csv" a partir de scripts "code/R/munge/%.R" e seus insumos (pré-requisitos), usando Rscript.
 
-        Os alvos são os arquivos listados pelo "MUNGE_FILES", que tenha como padrão o formato "data/%.csv".
-
-        E, para cada um deles, tem-se como pré-requisito um script R e um .xlsx correspondente ("code/R/munge/%.R" e "data-raw/%.xlsx"), com o mesmo "stem". Além do "config.yaml" e dos arquivos "code/R/lib/*.R"
+        E, para cada um deles, tem-se como pré-requisito um script R e um .xlsx correspondente ("code/R/munge/%.R" e "data-raw/%.xlsx"), com o mesmo "stem", além do "config.yaml" e dos arquivos "code/R/lib/*.R".
 
         ```
         $(MUNGE_FILES): data/%.csv: code/R/munge/%.R data-raw/%.xlsx $(CONFIG) $(LIB)
             @Rscript --verbose config/R/check_pkg_version.R 2> logs/log.Rout    # checagem de versões de pacotes R
             @echo "Atualizando $*..."    # mensagem informativa
-            @Rscript --verbose $< 2> logs/log.Rout    # executa o script R específico da base
+            @Rscript --verbose $< 2> logs/log.Rout    # executa o script R específico da base ("code/R/munge/%.R")
         ```
 
-        Dessa forma, se qualquer um desses arquivos for "mais novo" que o "MUNGE_FILES" (ex.: "data/exec_rec.csv"), é executado o script R "config/R/check_pkg_version.R".
+        Executa o script R "config/R/check_pkg_version.R".
 
         Este script R irá conferir se o pacote está na versão especificada, e, caso não esteja e se o usuário permitir, os pacotes serão instalados, conforme "version:" e "remote:" especificados no "config.yaml".
 
@@ -695,6 +694,76 @@ code/qvw/load_bases.qvs: config/R/load_bases.R $(CONFIG)
                 }
                 ```
 
+        Além disso, também executa os scripts R que constam na pasta "code/R/munge/%.R".
+
+        ??? note "reest_rec.R"
+            Como exemplo, vamos analisar o script R "reest_rec.R", mas os outros scripts são parecidos.
+
+            ```
+            library(relatorios)
+            source("code/R/lib/set_criterios_rec.R")
+            source("code/R/lib/demonstrativo_fiscal.R")
+
+            base <- reest::ler_reest_rec("data-raw/reest_rec.xlsx")    # lê o arquivo correspondente no "data-raw/", no caso, "reest_rec.xlsx"
+
+            base$BASE <- "REEST"    # cria uma coluna "BASE", com valor "REEST" (para todas as linhas)
+            base <- adiciona_desc_rec(base)
+            base <- add_criterios_rec(base)
+            base = add_de_para_receita(base)
+            base$RECEITA_DESC_2 = NULL
+            base[ANO >= 2018, RECEITA_COD_2 := RECEITA_COD]
+
+            write.csv2(base, "data/reest_rec.csv", row.names = FALSE, na="", fileEncoding = "UTF-8")
+            ```
+
+            ??? note "adiciona_desc_rec()"
+                ```
+                adiciona_desc_rec <- function(base) {
+                  base <- adiciona_desc(base, overwrite = TRUE, expand = TRUE)    # insere coluna de descrição
+                  base <- add_poder(base)    # preenche/cria coluna de "UO_PODER" (legislativo, judiciario, executivo...)
+                  return(base[])    # retorna o data.table materializado
+                }
+
+                add_criterios_rec <- function(base) {
+
+                  base[, MDE := is_mde_rec(base)]    # flag de MDE
+                  base[, FAPEMIG := is_fapemig_rec(base)]    # flag de FAPEMIG
+                  base[, INTRA := FALSE]    # inicializa INTRA como FALSE
+                  base[, INTRA := ifelse(nat(RECEITA_COD, 7), TRUE, FALSE)]    # marca TRUE quando nat(RECEITA_COD, 7) for TRUE
+                  base[, TRANSITA := transita(base)]    # flag de TRANSITA
+                  base[, ASPS := is_asps_rec(base)]    # flag de ASPS
+                  base[, INTRA_SAUDE := is_intra_saude_rec(base)]    # flag de INTRA_SAUDE
+                  base[, PRIMARIO := is_primario_rec(base)]    # flag de PRIMARIO
+                  base[, FONTE_STN := is_fonte_stn_rec(base)]    # flag de FONTE_STN
+
+                  base[, RCL := is_rcl(base)]    # flag de RCL
+                  base[, RCL_PESSOAL := is_rcl_pessoal(base)]    # flag de RCL_PESSOAL
+                  base[, RCL_DIVIDA := is_rcl_divida(base)]    # flag de RCL_DIVIDA
+                  base[, PERDA_FUNDEB := is_perda_fundeb(base)]    # flag de PERDA_FUNDEB
+                  base[, SEF := is_receita_SEF(base)]    # flag de SEF
+                  base[, PREV := is_rec_prev(base)]    # flag de PREV
+
+                  base <- add_demonst_grupo_rec(base)    # flag de PREV
+                  base <- add_demonst_matriz_rec(base)
+                  base <- add_demonstrativo_rec(base)
+                  base <- demonstrativo_fontes(base)
+
+                  base[, TIPO := "REC"]
+
+                  return(base[])
+                }
+                ```
+
+                * **adiciona_desc()**: Adiciona colunas descritivas às classificações orçamentárias, com base em algum arquivo "data-raw/desc/*.csv" ou nas tabelas descritivas no pacote "relatorios", conforme código e ano.
+
+                * **add_poder()**: Identifica o poder no qual a Unidade Orçamentária está incluída.
+
+                    Preenche/cria a coluna "UO_PODER" com um dos seguintes rótulos: LEGISLATIVO, JUDICIARIO, EXECUTIVO, MINISTERIO PUBLICO, TRIBUNAL DE CONTAS, DEFENSORIA PUBLICA, de acordo com a respectiva "UO_COD".
+
+                * **add_demonst_grupo_rec()**:
+
+
+
 * **data/metadados.csv**: gera/atualiza o arquivo "data/metadados.csv" com o conteúdo "metadados" das planilhas "data-raw/exec_*.xlsx"
 
     ??? note "data/metadados.csv"
@@ -749,6 +818,8 @@ code/qvw/load_bases.qvs: config/R/load_bases.R $(CONFIG)
     ??? note "data/testes.csv"
         Quando qualquer um dos pré-requisitos for mais novo, roda o script R "tests/test.R" para gerar ou atualizar o "data/testes.csv".
 
+        O script R gera um arquivo .csv com o conteúdo "metadados" das planilhas "data-raw/exec_*.xlsx".
+
         ```
         data/testes.csv: tests/test.R $(TEST_FILES) $(MUNGE_FILES) $(CONFIG) $(LIB)
           @echo "Atualizando testes..."
@@ -756,6 +827,9 @@ code/qvw/load_bases.qvs: config/R/load_bases.R $(CONFIG)
         ```
 
         ??? note "tests/test.R"
+            Caso, no arquivo config.yaml", "test: run_tests: yes", executa os arquivos da pasta "tests/test/", exceto os marcados com "no" em "test: tests:".
+
+            Além disso, cria uma lista "resultado_testes" a ser preenchida com os data.table gerados pelos arquivos de "tests/test/". Porém, o output de "test.R" é apenas uma data.table, com todas as informações unidades, escrita no arquivo "data/testes.csv".
 
             Obs.: os arquivos "helper_test_equal.R" e "helper_test_greater.R" possuem uma função ("test_equal()" e "test_greater_than()") que cria um data frame com os resultados do teste e empilha este data frame dentro da lista "resultado_testes".
 
@@ -774,7 +848,7 @@ code/qvw/load_bases.qvs: config/R/load_bases.R $(CONFIG)
               files <- paste0("tests/test/test_", stem, ".R")    # escreve o caminho desses arquivos .R
               invisible(Map(source, files, encoding = "UTF-8"))    # dá "source()" em cada "test_*.R" ativado (executa os arquivos)
 
-              output <- data.table::rbindlist(resultado_testes, fill = TRUE)    # empilha as entradas da lista "resultado_testes" em um único data.frame
+              output <- data.table::rbindlist(resultado_testes, fill = TRUE)    # empilha as entradas da lista "resultado_testes" em um único data.table
 
             } else {    # se a subchave "run_tests" estiver como "no"
               output <- data.frame(CONTEXTO = "Os testes estao configurados para nao serem executados")    # cria um data frame "CONTEXTO", em que o valor é a string
@@ -1140,7 +1214,7 @@ code/qvw/load_bases.qvs: config/R/load_bases.R $(CONFIG)
 
                 Formata os valores "x", "y", "adj_x", "adj_y" e "diff".
 
-                Retorna uma data.table com as colunas "CONTEXTO", "DESC", "RESULTADO", "DIFF_MSG", "VALOR_X", "VALOR_Y", "AJUSTE_X", "AJUSTE_Y" e "DESC_AJUSTE".
+                Retorna um data.frame com as colunas "CONTEXTO", "DESC", "RESULTADO", "DIFF_MSG", "VALOR_X", "VALOR_Y", "AJUSTE_X", "AJUSTE_Y" e "DESC_AJUSTE".
 
                 Acrescenta esse data.frame à lista "resultado_testes"
 
@@ -1235,55 +1309,28 @@ code/qvw/load_bases.qvs: config/R/load_bases.R $(CONFIG)
                 ```
 
             ??? note "test_complementacao.R"
-                Obs.: há mais conteúdo, mas ficaria muito grande, então peguei o primeiro exemplo de cada caso
+                Cria vários data.tables, com a função "test_equal()", os quais são adicionados à lista "resultado_testes".
+
+                Esses data.tables comparam os valores de receita e despesa de algumas situações para validar se a diferença entre eles é zero.
+
+                Obs.: há mais conteúdo, mas ficaria muito grande, então peguei o primeiro exemplo apenas, pois não muda muita coisa.
 
                 ```
                 library(relatorios)
                 #====================================================================
                 # Receita vs Complementacao
 
-                # Por exemplo, com base no arquivo "data/reest_rec.csv"
+                # Por exemplo, com base no arquivo "data/reest_rec.csv", vai somar os valores "VL_REC" dos "RECEITA_COD" desejados (que começam com "7999992114")
                 x <- base$rec[nat(RECEITA_COD, 7999992114), sum(VL_REC)]
 
-                y <- base$desp[ACAO_COD == 7009,
-                              sum(VL_DESP)]
+                y <- base$desp[ACAO_COD == 7009, sum(VL_DESP)]    # soma os valores "VL_DESP", cujo "ACAO_COD" seja "7009"
 
-                test_equal(x, y,
-                          label_x = "Receita (MATRIZ 799099111)",
+                # Usa a função "test_equal()" para validar se "x" é igual a "y".
+                # Acrescenta um data.frame com essas informações à lista "resultado_testes"
+                test_equal(x, y,    # valor a ser calculado a diff
+                          label_x = "Receita (MATRIZ 799099111)",    # informações para a tabela
                           label_y = "Complementa��o (ACAO 7009)",
                           descricao = "Receita vs Complementa��o",
-                          contexto = "Complementa��o")
-
-                #====================================================================
-                # Receita vs Inativos
-
-                # EXECUTIVO
-                x <- base$rec[nat(RECEITA_COD, 7999992114001, 1922990199000) & FONTE_COD == 58,
-                              sum(VL_REC)]
-
-                y <- base$desp[UO_COD == 4711 & FONTE_COD == 58,
-                              sum(VL_DESP)]
-
-                test_equal(x, y,
-                          label_x = "Receita (MATRIZ 7990991113001 e 1922991199000)",
-                          label_y = "Inativos (UO 1441 e 4711)",
-                          descricao = "Receita vs Inativos - EXECUTIVO",
-                          contexto = "Complementa��o")
-
-                #====================================================================
-                # Complementacao vs Inativos
-
-                # LEMG
-                x <- base$desp[UO_COD == 2041 & ACAO_COD == 7009,
-                              sum(VL_DESP)]
-
-                y <- base$desp[UO_COD == 4711 & ACAO_COD == 7617 & FONTE_COD == 58,
-                              sum(VL_DESP)]
-
-                test_equal(x, y,
-                          label_x = "Complementa��o LEMG",
-                          label_y = "Inativos LEMG (ACAO 7617 do FFPMG)",
-                          descricao = "Complementacao vs Inativos - LEMG",
                           contexto = "Complementa��o")
                 ```
 
@@ -1307,8 +1354,10 @@ code/qvw/load_bases.qvs: config/R/load_bases.R $(CONFIG)
                       substrings <- Map(substr, list(receita_cod), 1, n_list)    # extrai os primeiros caracteres do "receita_cod" (do mesmo tamanho de "naturezas")
 
                       # Por exemplo, considerando "substrings" = c("192299019", "799099111") e "naturezas" = "799099111", retorna "FALSE TRUE".
-                      testes_logicos_incluir <- Map(`%in%`, substrings[incluir], naturezas[incluir])    # retorna uma lista com o vetor lógico de cada natureza (positiva) indicando se os elementos de "substrings[incluir]" estão dentro de "naturezas[incluir]"
-                      testes_logicos_excluir <- Map(`%in%`, substrings[excluir], naturezas[excluir])    # retorna uma lista com o vetor lógico de cada natureza (negativa) indicando se os elementos de "substrings[excluir]" estão dentro de "naturezas[excluir]"
+                      # retorna uma lista com o vetor lógico de cada natureza (positiva) indicando se os elementos de "substrings[incluir]" estão dentro de "naturezas[incluir]"
+                      testes_logicos_incluir <- Map(`%in%`, substrings[incluir], naturezas[incluir])
+                      # retorna uma lista com o vetor lógico de cada natureza (negativa) indicando se os elementos de "substrings[excluir]" estão dentro de "naturezas[excluir]"
+                      testes_logicos_excluir <- Map(`%in%`, substrings[excluir], naturezas[excluir])
 
                       # Transforma em um vetor lógico, combinando o vetor de cada natureza, com a condição de "OU".
                       # Ou seja, é um vetor lógico dizendo quais códigos devem ser incluídos e quais devem ser excluídos
@@ -1330,6 +1379,14 @@ code/qvw/load_bases.qvs: config/R/load_bases.R $(CONFIG)
                           format(as.numeric(x), scientific = FALSE, trim = TRUE)    # formato numério, sem formatação científica, justificado (remove espaços extras)
                         }
                         ```
+
+            ??? note "Outros arquivos "test_*.R""
+                Aparentemente todos seguem a mesma lógica de gerar data.tables com a validação se os valores da receita batem com os valores da despesa (por meio da função "test_equal()"), em diversas situações, cada um com seus próprios filtros.
+
+                Entretanto, como não haviam arquivos na pasta "data/" ficou mais difícil de analisar caso a caso, para ter uma noção do que é feito em cada script R.
+
+                Obs.: arquivo "test_ldo.R" vazio
+
 
 
 * **code/qvw/load_bases.qvs**:
