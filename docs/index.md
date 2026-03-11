@@ -696,8 +696,16 @@ code/qvw/load_bases.qvs: config/R/load_bases.R $(CONFIG)
 
         Além disso, também executa os scripts R que constam na pasta "code/R/munge/%.R".
 
+        Eles transformam o "data-raw/%.xlsx", adicionando algumas colunas de descrição e de-para, e exportam como "data/%.csv".
+
         ??? note "reest_rec.R"
             Como exemplo, vamos analisar o script R "reest_rec.R", mas os outros scripts são parecidos.
+
+            Utiliza o pacote "relatorios" e outras funções auxiliares para transformar os dados brutos em "data-raw" para dados transformados em "data".
+
+            Essa transformação envolve adicionar algumas colunas como de descrição, "UO_PODER", flags (MDE, FAPEMIG, INTRA...), colunas "DEMONST_GRUPO_REC", "DEMONST_MATRIZ_REC", "DEMONSTRATIVO_REC", "FONTE_CATEGORIA", entre outras.
+
+            Além disso, atualiza "RECEITA_COD" com os códigos mais recentes (conforme de-para "add_de_para_receita_tbl").
 
             ```
             library(relatorios)
@@ -707,23 +715,35 @@ code/qvw/load_bases.qvs: config/R/load_bases.R $(CONFIG)
             base <- reest::ler_reest_rec("data-raw/reest_rec.xlsx")    # lê o arquivo correspondente no "data-raw/", no caso, "reest_rec.xlsx"
 
             base$BASE <- "REEST"    # cria uma coluna "BASE", com valor "REEST" (para todas as linhas)
-            base <- adiciona_desc_rec(base)
-            base <- add_criterios_rec(base)
-            base = add_de_para_receita(base)
-            base$RECEITA_DESC_2 = NULL
-            base[ANO >= 2018, RECEITA_COD_2 := RECEITA_COD]
+            base <- adiciona_desc_rec(base)    # cria as colunas de descrição e "UO_PODER".
+            base <- add_criterios_rec(base)    # cria muitas flags (MDE, FAPEMIG, INTRA...) e as colunas "DEMONST_GRUPO_REC", "DEMONST_MATRIZ_REC", "DEMONSTRATIVO_REC", "FONTE_CATEGORIA" e "TIPO"
+            base = add_de_para_receita(base)    # adiciona "RECEITA_COD_2" conforme "add_de_para_receita_tbl"
+            base$RECEITA_DESC_2 = NULL    # remove a coluna "RECEITA_DESC_2" (descrição do "RECEITA_COD" com origem no de-para)
+            base[ANO >= 2018, RECEITA_COD_2 := RECEITA_COD]    # quando ANO >= 2018, define "RECEITA_COD_2" igual a "RECEITA_COD"
 
+            # exporta "data/reest_rec.csv" com as novas colunas
             write.csv2(base, "data/reest_rec.csv", row.names = FALSE, na="", fileEncoding = "UTF-8")
             ```
 
             ??? note "adiciona_desc_rec()"
+                Cria as colunas de descrição e "UO_PODER".
+
                 ```
                 adiciona_desc_rec <- function(base) {
                   base <- adiciona_desc(base, overwrite = TRUE, expand = TRUE)    # insere coluna de descrição
-                  base <- add_poder(base)    # preenche/cria coluna de "UO_PODER" (legislativo, judiciario, executivo...)
+                  base <- add_poder(base)    # preenche/cria coluna de "UO_PODER"
                   return(base[])    # retorna o data.table materializado
                 }
+                ```
 
+                * **adiciona_desc()**: Adiciona colunas descritivas às classificações orçamentárias, com base em algum arquivo "data-raw/desc/*.csv" ou nas tabelas descritivas no pacote "relatorios", de acordo com código e ano.
+
+                * **add_poder()**: Preenche/cria a coluna "UO_PODER" com um dos seguintes rótulos: LEGISLATIVO, JUDICIARIO, EXECUTIVO, MINISTERIO PUBLICO, TRIBUNAL DE CONTAS, DEFENSORIA PUBLICA, de acordo com o respectivo "UO_COD".
+
+            ??? note "add_criterios_rec()"
+                Crias as colunas "MDE", "FAPEMIG", "INTRA", "TRANSITA", "ASPS", "INTRA_SAUDE", "PRIMARIO", "FONTE_STN", "RCL", "RCL_PESSOAL", "RCL_DIVIDA", "PERDA_FUNDEB", "SEF", "PREV", "DEMONST_GRUPO_REC", "DEMONST_MATRIZ_REC", "DEMONSTRATIVO_REC", "FONTE_CATEGORIA" e "TIPO".
+
+                ```
                 add_criterios_rec <- function(base) {
 
                   base[, MDE := is_mde_rec(base)]    # flag de MDE
@@ -743,25 +763,66 @@ code/qvw/load_bases.qvs: config/R/load_bases.R $(CONFIG)
                   base[, SEF := is_receita_SEF(base)]    # flag de SEF
                   base[, PREV := is_rec_prev(base)]    # flag de PREV
 
-                  base <- add_demonst_grupo_rec(base)    # flag de PREV
-                  base <- add_demonst_matriz_rec(base)
-                  base <- add_demonstrativo_rec(base)
-                  base <- demonstrativo_fontes(base)
+                  base <- add_demonst_grupo_rec(base)    # preenche/cria coluna de "DEMONST_GRUPO_REC"
+                  base <- add_demonst_matriz_rec(base)    # preenche/cria coluna de "DEMONST_MATRIZ_REC"
+                  base <- add_demonstrativo_rec(base)    # preenche/cria coluna de "DEMONSTRATIVO_REC"
+                  base <- demonstrativo_fontes(base)    # preenche/cria coluna de "FONTE_CATEGORIA"
 
-                  base[, TIPO := "REC"]
+                  base[, TIPO := "REC"]    # preenche/cria coluna de "TIPO" com o valor "REC"
 
-                  return(base[])
+                  return(base[])    # retorna o data.table materializado
                 }
                 ```
 
-                * **adiciona_desc()**: Adiciona colunas descritivas às classificações orçamentárias, com base em algum arquivo "data-raw/desc/*.csv" ou nas tabelas descritivas no pacote "relatorios", conforme código e ano.
+                * **add_demonst_grupo_rec()**: Preenche/cria coluna de "DEMONST_GRUPO_REC" com um dos seguintes rótulos: (I) RECEITAS CORRENTES, (II) RECEITAS DE CAPITAL, (III) DEDUÇÕES DA RECEITA CORRENTE, (IV) RECEITA INTRAORÇAMENTÁRIA, de acordo com o respectivo "RECEITA_COD".
 
-                * **add_poder()**: Identifica o poder no qual a Unidade Orçamentária está incluída.
+                * **add_demonst_matriz_rec()**: Preenche/cria coluna de "DEMONST_MATRIZ_REC" com um dos seguintes rótulos: 1.1 Impostos, Taxas e Contribuições de Melhoria, 1.2 Receita de Contribuições, 1.3 Receita Patrimonial, entre outros, de acordo com o respectivo "RECEITA_COD".
 
-                    Preenche/cria a coluna "UO_PODER" com um dos seguintes rótulos: LEGISLATIVO, JUDICIARIO, EXECUTIVO, MINISTERIO PUBLICO, TRIBUNAL DE CONTAS, DEFENSORIA PUBLICA, de acordo com a respectiva "UO_COD".
+                * **add_demonstrativo_rec()**: Preenche/cria coluna de "DEMONSTRATIVO_REC" com um dos seguintes rótulos: 1.1.1 ICMS - Principal, 1.1.2 ICMS - Acessórias, 1.1.3 IPVA - Principal, entre outros, de acordo com o respectivo "RECEITA_COD".
 
-                * **add_demonst_grupo_rec()**:
+                * **demonstrativo_fontes()**: Preenche/cria coluna de "FONTE_CATEGORIA" com um dos seguintes rótulos: Recursos Ordinarios, Recursos Diretamente Arrecadados, Taxas Estaduais, entre outros, de acordo com o respectivo "FONTE_COD". Modifica a tabela "base" por referência (diretamente).
 
+            ??? note "add_de_para_receita()"
+                Se "substituir_class = FALSE", acresenta à base a coluna "RECEITA_COD_2", fazendo um de-para entre os códigos antigos e os novos, conforme definido em "add_de_para_receita_tbl.rda".
+
+                Se "substituir_class = TRUE", atualiza "RECEITA_COD" com os códigos novos.
+
+                Por exemplo:
+
+                | RECEITA_COD | RECEITA_COD_2 | RECEITA_DESC_2 |
+                |----------|----------|----------|
+                | 1112043100 | 1113031101000 | IR - Retido Fonte - Trabalho - Princ. |
+                | 1112050100 | 1112510101000 | IPVA - Princ. - Cota Parte do Estado |
+                | 1112050200 | 1112510102000 | IPVA - Princ. - Cota Parte dos Municípios |
+
+                ```
+                add_de_para_receita <- function(base, substituir_class = FALSE) {
+
+                  if(substituir_class == FALSE) {    # se substituir_class = FALSE
+                    x = base %>%
+                      dplyr::left_join(add_de_para_receita_tbl)    # acrescenta à base a coluna "RECEITA_COD_2" vinda de "add_de_para_receita_tbl.rda"
+                    if(anyNA(x$RECEITA_COD_2)) {    # se alguma linha não encontrou correspondência (ficou como "NA")
+                      warning("Linhas não classificadas: ", paste(which(is.na(x$RECEITA_COD_2)), collapse = ", "))    # avisa os índices dessas linhas
+                    }
+                    return(as.data.table(x))    # retorna o resultado como data.table
+                  }
+
+                  if(substituir_class == TRUE) {    # se substituir_class = TRUE
+                    cols = names(base)    # nome das colunas de "base"
+                    x = base %>%
+                      dplyr::filter(ANO <= 2017) %>%    # filtra apenas anos ≤ 2017
+                      dplyr::left_join(add_de_para_receita_tbl) %>%    # acrescenta à base a coluna "RECEITA_COD_2" vinda de "add_de_para_receita_tbl.rda"
+                      dplyr::select(-RECEITA_COD) %>%    # seleciona todas as colunas, exceto "RECEITA_COD"
+                      dplyr::rename(RECEITA_COD = RECEITA_COD_2) %>%    # renomeia "RECEITA_COD_2" para "RECEITA_COD"
+                      dplyr::select(cols)    # reordena as colunas na ordem de "base"
+
+                    y = base %>% dplyr::filter(ANO >= 2018)    # mantém anos ≥ 2018 como estão
+                    z = dplyr::bind_rows(x,y)    # empilha x (corrigidos) com y (originais)
+
+                    return(as.data.table(z))    # retorna como data.table
+                  }
+                }
+                ```
 
 
 * **data/metadados.csv**: gera/atualiza o arquivo "data/metadados.csv" com o conteúdo "metadados" das planilhas "data-raw/exec_*.xlsx"
@@ -813,12 +874,12 @@ code/qvw/load_bases.qvs: config/R/load_bases.R $(CONFIG)
                 }
                 ```
 
-* **data/testes.csv**:
+* **data/testes.csv**: gera/atualiza o arquivo "data/testes.csv", que valida os valores de receita e despesa das planilhas "data/*.csv" (conforme "test: base:")
 
     ??? note "data/testes.csv"
         Quando qualquer um dos pré-requisitos for mais novo, roda o script R "tests/test.R" para gerar ou atualizar o "data/testes.csv".
 
-        O script R gera um arquivo .csv com o conteúdo "metadados" das planilhas "data-raw/exec_*.xlsx".
+        O script R gera um arquivo .csv contendo a validação dos valores de receita e despesa conforme valores das planilhas "data/*.csv" (a planilha escolhida depende do que estiver definido em "test: base:").
 
         ```
         data/testes.csv: tests/test.R $(TEST_FILES) $(MUNGE_FILES) $(CONFIG) $(LIB)
@@ -829,7 +890,7 @@ code/qvw/load_bases.qvs: config/R/load_bases.R $(CONFIG)
         ??? note "tests/test.R"
             Caso, no arquivo config.yaml", "test: run_tests: yes", executa os arquivos da pasta "tests/test/", exceto os marcados com "no" em "test: tests:".
 
-            Além disso, cria uma lista "resultado_testes" a ser preenchida com os data.table gerados pelos arquivos de "tests/test/". Porém, o output de "test.R" é apenas uma data.table, com todas as informações unidades, escrita no arquivo "data/testes.csv".
+            Além disso, cria uma lista "resultado_testes" a ser preenchida com os data.table gerados pelos arquivos de "tests/test/test_*.R". Porém, o output de "test.R" é apenas uma data.table, com todas as informações unidades, escrita no arquivo "data/testes.csv".
 
             Obs.: os arquivos "helper_test_equal.R" e "helper_test_greater.R" possuem uma função ("test_equal()" e "test_greater_than()") que cria um data frame com os resultados do teste e empilha este data frame dentro da lista "resultado_testes".
 
@@ -865,6 +926,8 @@ code/qvw/load_bases.qvs: config/R/load_bases.R $(CONFIG)
                 Por exemplo, caso seja "reest", irá procurar na pasta "data/" os arquivos "reest_rec.csv" e "reest_desp.csv.
 
                 Assim, irá criar duas data.tables com o conteúdos desses .csv.
+
+                Além disso, caso seja necessário, corrige os nomes das colunas. Por exemplo, altera "COD_UO" para "UO_COD".
 
                 ```
                 library(reest)
@@ -912,302 +975,17 @@ code/qvw/load_bases.qvs: config/R/load_bases.R $(CONFIG)
                 lockEnvironment(base, bindings = TRUE)    # não permite mais reatribuir base$rec ou base$desp, nem criar/remover objetos nesse ambiente
                 ```
 
-                ??? note "ler_exec_rec()"
-                    Altera nome das colunas e salva como "data.table".
+                * **ler_exec_rec()**: Altera nome das colunas (ex.: \`Ano de Exercício\` = "ANO", \`Mês - Numérico\` = "MES_COD") e salva como "data.table". Só aceita .csv ou .xlsx.
 
-                    Só aceita .csv ou .xlsx.
+                * **ler_exec_desp()**: Altera nome das colunas e salva como "data.table". Só aceita .csv ou .xlsx.
 
-                    ```
-                    ler_exec_rec <- function(path) {
-                      #browser()
-                      cols <- c(
-                        `Ano de Exercício` = "ANO",
-                        `Mês - Numérico` = "MES_COD",
-                        `Unidade Orçamentária - Código` = "UO_COD",
-                        `Unidade Orçamentária - Sigla` = "UO_SIGLA",
-                        `Classificação Receita - Código` = "RECEITA_COD",
-                        `Classificação Receita - Descrição` = "RECEITA_DESC",
-                        `Fonte Recurso - Código` = "FONTE_COD",
-                        `Fonte Recurso - Descrição` = "FONTE_DESC",
-                        `Valor Previsto Inicial` = "VL_PREV_INICIAL",
-                        `Valor Efetivado Ajustado` = "VL_EFET_AJUST"
-                      )
+                * **ler_reest_rec()**: Salva como "data.table" (não há necessidade de alterar nomes). Só aceita .csv ou .xlsx.
 
-                      excel <- grepl(pattern = "(.xlsx$)|(.xls$)|(.xlsm$)", path, ignore.case = TRUE)
-                      csv <- grepl(pattern = ".csv$", path, ignore.case = TRUE)
+                * **ler_reest_desp()**: Salva como "data.table" (não há necessidade de alterar nomes). Só aceita .csv ou .xlsx.
 
-                      if(excel) {
-                        base <- data.table(read_excel(path))
-                      } else if(csv) {
-                        base <- data.table(read.csv2(path, stringsAsFactors = FALSE,  check.names = FALSE))
-                      } else {
-                        stop("Extensao invalida de arquivo.")
-                      }
+                * **ler_loa_rec()**: Altera nome das colunas (ex.: \`COD_UO\` = "UO_COD", \`NOME_UO\` = "UO_DESC") e salva como "data.table". Só aceita .csv ou .xlsx.
 
-                      base <- check_base(base, cols)
-
-                      return(base)
-                    }
-                    ```
-
-                ??? note "ler_exec_desp()"
-                    Altera nome das colunas e salva como "data.table".
-
-                    Só aceita .csv ou .xlsx.
-
-                    ```
-                    ler_exec_desp <- function(path) {
-
-                      cols <- c(
-                        `Ano de Exercício` = "ANO",
-                        `Mês - Numérico` = "MES_COD",
-                        `Unidade Orçamentária - Código` = "UO_COD",
-                        `Unidade Orçamentária - Sigla` = "UO_SIGLA",
-                        `Poder Unid Orçamentária - Código` = "PODER_COD",
-                        `Poder Unid Orçamentária - Desc` = "PODER_DESC",
-                        `Função - Código` = "FUNCAO_COD",
-                        `Função - Descrição` = "FUNCAO_DESC",
-                        `Subfunção - Código` = "SUBFUNCAO_COD",
-                        `Subfunção - Descrição` = "SUBFUNCAO_DESC",
-                        `Programa - Código` = "PROGRAMA_COD",
-                        `Programa - Descrição` = "PROGRAMA_DESC",
-                        `Projeto_Atividade - Código` = "ACAO_COD",
-                        `Projeto_Atividade - Descrição` = "ACAO_DESC",
-                        `Categoria Econômica Despesa -Código` = "CATEGORIA_COD",
-                        `Categoria Econômica Despesa - Desc` = "CATEGORIA_DESC",
-                        `Grupo Despesa - Código` = "GRUPO_COD",
-                        `Grupo Despesa - Descrição` = "GRUPO_DESC",
-                        `Modalidade Aplicação - Código` = "MODALIDADE_COD",
-                        `Modalidade Aplicação - Descrição` = "MODALIDADE_DESC",
-                        `Elemento Despesa - Código` = "ELEMENTO_COD",
-                        `Elemento Despesa - Descrição` = "ELEMENTO_DESC",
-                        `Item Despesa - Código` = "ITEM_COD",
-                        `Item Despesa - Descrição` = "ITEM_DESC",
-                        `Elemento Item Despesa - Código` = "ELEMENTO_ITEM_COD",
-                        `Elemento Item Despesa - Descrição` = "ELEMENTO_ITEM_DESC",
-                        `Fonte Recurso - Código` = "FONTE_COD",
-                        `Fonte Recurso - Descrição` = "FONTE_DESC",
-                        `Identificador Orçamento - Código` = "IAG_COD",
-                        `Procedência - Código` = "IPU_COD",
-                        `Procedência - Descrição` = "IPU_DESC",
-                        `Valor Despesa Empenhada` = "VL_EMP",
-                        `Valor Despesa Liquidada` = "VL_LIQ",
-                        `Valor Pago Financeiro` = "VL_PAGO_FIN",
-                        `Valor Pago Orçamentário` = "VL_PAGO_ORC"
-                      )
-
-                      excel <- grepl(pattern = "(.xlsx$)|(.xls$)|(.xlsm$)", path, ignore.case = TRUE)
-                      csv <- grepl(pattern = ".csv$", path, ignore.case = TRUE)
-
-                      if(excel) {
-                        sheets <- excel_sheets(path)
-                        regex <- "\\([0-9]+\\)$"
-                        matched <- grepl(regex, sheets)
-                        raiz <- unique(sub(regex, "", sheets[matched]))
-
-                        stopifnot(length(raiz) <= 1)
-
-                        if(length(raiz)==0)
-                          sheets <- sheets[1] else
-                          sheets <- sheets[grepl(paste0("^",raiz), sheets)]
-
-                        col_names <- c(list(TRUE), rep(list(FALSE), length(sheets) - 1))
-
-                        base_raw <- Map(read_excel, path = path, sheet = sheets, na = "NA", col_names = col_names)
-                        base <- rbindlist(base_raw)
-                      } else if(csv) {
-                        base <- data.table(read.csv2(path, stringsAsFactors = FALSE,  check.names = FALSE))
-                      } else {
-                        stop("Extensao de arquivo invalida.")
-                      }
-
-                      base <- check_base(base, cols)
-                      return(base)
-                    }
-                    ```
-
-                ??? note "ler_reest_rec()"
-                    Salva como "data.table".
-
-                    Só aceita .csv ou .xlsx.
-
-                    ```
-                    ler_reest_rec <- function(path) {
-
-                      cols <- NA_character_ # nao e necessario ajustas nomes das colunas da base reest
-
-                      excel <- grepl(pattern = "(.xlsx$)|(.xls$)|(.xlsm$)", path, ignore.case = TRUE)
-                      csv <- grepl(pattern = ".csv$", path, ignore.case = TRUE)
-
-                      if(excel) {
-                        base <- data.table(read_excel(path, na = "NA", sheet = "base"))
-                      } else if(csv) {
-                        base <- data.table(read.csv2(path, stringsAsFactors = FALSE,  check.names = FALSE))
-                      } else {
-                        stop("Extensao invalida de arquivo.")
-                      }
-
-                      base <- check_base(base, cols)
-
-                      return(base)
-                    }
-                    ```
-
-                ??? note "ler_reest_desp"
-                    Salva como "data.table".
-
-                    Só aceita .csv ou .xlsx.
-
-                    ```
-                    ler_reest_desp <- function(path) {
-
-                      cols <- NA_character_ # nao e necessario ajustas nomes das colunas da base reest
-
-                      excel <- grepl(pattern = "(.xlsx$)|(.xls$)|(.xlsm$)", path, ignore.case = TRUE)
-                      csv <- grepl(pattern = ".csv$", path, ignore.case = TRUE)
-
-                      if(excel) {
-                        base <- data.table(read_excel(path, na = "NA", sheet = "base"))
-                      } else if(csv) {
-                        base <- data.table(read.csv2(path, stringsAsFactors = FALSE,  check.names = FALSE))
-                      } else {
-                        stop("Extensao invalida de arquivo.")
-                      }
-
-                      base <- check_base(base, cols)
-
-                      return(base)
-                    }
-                    ```
-
-                ??? note "ler_loa_rec()"
-                    Altera nome das colunas e salva como "data.table".
-
-                    Só aceita .csv ou .xlsx.
-
-                    ```
-                    ler_loa_rec <- function(path) {
-
-                      cols <- c(
-                        `COD_UO` = "UO_COD",
-                        `NOME_UO` = "UO_DESC",
-                        `SIGLA_UO` = "UO_SIGLA",
-                        `COD_FONTE` = "FONTE_COD",
-                        `FONTE` = "FONTE_DESC",
-                        `INTERPRETACAO` = "INTERPRETACAO",
-                        `CATEGORIA` = "CATEGORIA_COD",
-                        `SUBCATEGORIA` = "SUBCATEGORIA_COD",
-                        `FONTE_CLAS` = "FONTE_REC_COD",
-                        `RUBRICA` = "RUBRICA_COD",
-                        `ALINEA` = "ALINEA_COD",
-                        `SUBALINEA` = "SUBALINEA_COD",
-                        `ITEM` = "ITEM_COD",
-                        `COD_RECEITA` = "RECEITA_COD",
-                        `RECEITA` = "RECEITA_DESC",
-                        `INTERP_RECEITA` = "INTERP_RECEITA",
-                        `VALOR UO (R$)` = "VL_LOA_REC_UO",
-                        `VALOR SCPPO (R$)` = "VL_LOA_REC_SCPPO",
-                        `VALOR FINAL (R$)` = "VL_LOA_REC",
-                        `ANO` = "ANO",
-                        `BASE LEGAL` = "BASE_LEGAL",
-                        `METODOLOGIA DE CÁLCULO E PREMISSAS UTILIZADAS` = "MEMORIA_CALCULO"
-                      )
-
-                      excel <- grepl(pattern = "(.xlsx$)|(.xls$)|(.xlsm$)", path, ignore.case = TRUE)
-                      csv <- grepl(pattern = ".csv$", path, ignore.case = TRUE)
-
-                      if(excel) {
-                        base <- data.table(read_excel(path))
-                      } else if(csv) {
-                        base <- data.table(read.csv2(path, stringsAsFactors = FALSE,  check.names = FALSE))
-                      } else {
-                        stop("Extensao invalida de arquivo.")
-                      }
-
-                      base <- check_base(base, cols)
-
-                      return(base)
-                    }
-                    ```
-
-                ??? note "ler_loa_desp()"
-                    Altera nome das colunas e salva como "data.table".
-
-                    Só aceita .csv ou .xlsx.
-
-                    ```
-                    ler_loa_desp <- function(path) {
-
-                      cols <- c(
-                        # colunas base qdd fiscal
-                        `ANO` = "ANO",
-                        `COD_ORGAO` = "ORGAO_COD",
-                        `ORGAO` = "ORGAO_DESC",
-                        `PODER` = "PODER_COD",
-                        `SITUACAO` = "SITUACAO",
-                        `COD_UO` = "UO_COD",
-                        `UO` = "UO_DESC",
-                        `CATEGORIA` = "CATEGORIA_COD",
-                        `GRUPO_DESPESA` = "GRUPO_COD",
-                        `MODALIDADE` = "MODALIDADE_COD",
-                        `ELEMENTO_DESPESA` = "ELEMENTO_COD",
-                        `FONTE` = "FONTE_COD",
-                        `IPU` = "IPU_COD",
-                        `SEQ_PROGTRAB` = "SEQ_PROGTRAB",
-                        `FUNCAO` = "FUNCAO_COD",
-                        `SUB_FUNCAO` = "SUBFUNCAO_COD",
-                        `PROGRAMA` = "PROGRAMA_COD",
-                        `IDENT_PROJATIV` = "IDENT_PROJ_ATIV_COD",
-                        `PROJ_ATIV` = "PROJ_ATIV_COD",
-                        `AÇÃO` = "ACAO_COD",
-                        `SUB_PROJETO` = "SUBPROJETO_COD",
-                        `VALOR UO (R$)` = "VL_LOA_DESP_UO",
-                        `VALOR SCPPO (R$)` = "VL_LOA_DESP_SCPPO",
-                        `VALOR FINAL (R$)` = "VL_LOA_DESP",
-                        `IAG` = "IAG_COD",
-                        `NOME_ACAO` = "ACAO_DESC",
-                        `NOME_PROGRAMA` = "PROGRAMA_DESC",
-                        # colunas base elemento item
-                        `Código do Órgão` = "ORGAO_COD",
-                        `Órgão` = "ORGAO_DESC",
-                        `Código da UO` = "UO_COD",
-                        `Unidade Orçamentária` = "UO_DESC",
-                        `Função` = "FUNCAO_COD",
-                        `Subfunção` = "SUBFUNCAO_COD",
-                        `Programa` = "PROGRAMA_COD",
-                        `Identificador` = "IDENT_PROJ_ATIV_COD",
-                        `Projeto_Atividade` = "PROJ_ATIV_COD",
-                        `Ação` = "ACAO_COD",
-                        `Subprojeto` = "SUBPROJETO_COD",
-                        `Categoria` = "CATEGORIA_COD",
-                        `Grupo_Despesa` = "GRUPO_COD",
-                        `Modalidade` = "MODALIDADE_COD",
-                        `Elemento_Despesa` = "ELEMENTO_COD",
-                        `Item_Despesa` = "ITEM_COD",
-                        `Fonte` = "FONTE_COD",
-                        `IPU` = "IPU_COD",
-                        `IAG` = "IAG_COD",
-                        `Descrição` = "ACAO_DESC",
-                        `Valor (R$)` = "VL_LOA_DESP"
-                      )
-
-                      excel <- grepl(pattern = "(.xlsx$)|(.xls$)|(.xlsm$)", path, ignore.case = TRUE)
-                      csv <- grepl(pattern = ".csv$", path, ignore.case = TRUE)
-
-                      if(excel) {
-                        base <- data.table(read_excel(path))
-                      } else if(csv) {
-                        base <- data.table(read.csv2(path, stringsAsFactors = FALSE,  check.names = FALSE))
-                      } else {
-                        stop("Extensao invalida de arquivo.")
-                      }
-
-                      base <- check_base(base, cols)
-
-                      return(base)
-
-                    }
-                    ```
+                * **ler_loa_desp()**: Altera nome das colunas (ex.: \`ANO\` = "ANO", \`COD_ORGAO\` = "ORGAO_COD") e salva como "data.table". Só aceita .csv ou .xlsx.
 
             ??? note "helper_test_equal.R"
                 Valida se "x + adj_x" é igual a "y + adj_y" (sem considerar decimais).
@@ -1383,10 +1161,7 @@ code/qvw/load_bases.qvs: config/R/load_bases.R $(CONFIG)
             ??? note "Outros arquivos "test_*.R""
                 Aparentemente todos seguem a mesma lógica de gerar data.tables com a validação se os valores da receita batem com os valores da despesa (por meio da função "test_equal()"), em diversas situações, cada um com seus próprios filtros.
 
-                Entretanto, como não haviam arquivos na pasta "data/" ficou mais difícil de analisar caso a caso, para ter uma noção do que é feito em cada script R.
-
                 Obs.: arquivo "test_ldo.R" vazio
-
 
 
 * **code/qvw/load_bases.qvs**:
@@ -1417,6 +1192,17 @@ code/qvw/load_bases.qvs: config/R/load_bases.R $(CONFIG)
 
             write(output, file = "code/qvw/load_bases.qvs")
             ```
+
+            ??? note "load_bases.qvs"
+            ```
+              LOAD *
+              FROM
+              data\loa_rec.csv
+
+              (txt, utf8, embedded labels, delimiter is ';', msq);
+
+              CONCATENATE
+              ```
 
 
 ## munge
