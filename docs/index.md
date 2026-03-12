@@ -642,18 +642,13 @@ code/qvw/load_bases.qvs: config/R/load_bases.R $(CONFIG)
                       # Obs.: os valores "pkg", "version" e "remote" devem ser especificados ao utilizar a função
                       switch(remote,    # escolhe o instalador confome "remote"
                              cran = remotes::install_version(pkg, version = version),    # se remote = "cran", instala a versão do pacote especificados
-                             bitbucket = devtools::install_bitbucket(repo = paste0("dcgf/", pkg),    # se remote = bitbucket, especifica o repositório "username/repo"
-                                                                     ref = paste0("v", version),    # referência ao git (commit, tag, branch...)
-                                                                     auth_user = "dcgf-admin",    # usuário, caso o pacote esteja hospedado em repositório privado
-                                                                     password = "FY9AnQkMVrRFW7aJUqt5",    # senha
-                                                                     upgrade = "never",    # não encontrei esse argumento
-                                                                     ask = FALSE ),    # não encontrei esse argumento
                              github = devtools::install_github(repo = paste0("splor-mg/", pkg),    # se remote = github, especifica o repositório "username/repo"
                                                                       ref = paste0("v", version),    # referência ao git (commit, tag, branch...)
                                                                       auth_token = personal_token),    # token pessoal, para acessar repositório privado
                              stop("Não é possível instalar o pacote do remote especificado."))    # interrompe a execução
                     }
                     ```
+
             ??? note "need_update()"
                 A função retorna "TRUE" se o pacote não estiver instalado ou se a versão instalada for diferente da versão especificada. Caso contrário, retorna "FALSE". Ou seja, ela responde se o pacote precisa ser instalado/atualizado.
 

@@ -882,17 +882,11 @@
 </span><span id="__span-30-26"><a id="__codelineno-30-26" name="__codelineno-30-26" href="#__codelineno-30-26"></a>  # Obs.: os valores &quot;pkg&quot;, &quot;version&quot; e &quot;remote&quot; devem ser especificados ao utilizar a função
 </span><span id="__span-30-27"><a id="__codelineno-30-27" name="__codelineno-30-27" href="#__codelineno-30-27"></a>  switch(remote,    # escolhe o instalador confome &quot;remote&quot;
 </span><span id="__span-30-28"><a id="__codelineno-30-28" name="__codelineno-30-28" href="#__codelineno-30-28"></a>         cran = remotes::install_version(pkg, version = version),    # se remote = &quot;cran&quot;, instala a versão do pacote especificados
-</span><span id="__span-30-29"><a id="__codelineno-30-29" name="__codelineno-30-29" href="#__codelineno-30-29"></a>         bitbucket = devtools::install_bitbucket(repo = paste0(&quot;dcgf/&quot;, pkg),    # se remote = bitbucket, especifica o repositório &quot;username/repo&quot;
-</span><span id="__span-30-30"><a id="__codelineno-30-30" name="__codelineno-30-30" href="#__codelineno-30-30"></a>                                                 ref = paste0(&quot;v&quot;, version),    # referência ao git (commit, tag, branch...)
-</span><span id="__span-30-31"><a id="__codelineno-30-31" name="__codelineno-30-31" href="#__codelineno-30-31"></a>                                                 auth_user = &quot;dcgf-admin&quot;,    # usuário, caso o pacote esteja hospedado em repositório privado
-</span><span id="__span-30-32"><a id="__codelineno-30-32" name="__codelineno-30-32" href="#__codelineno-30-32"></a>                                                 password = &quot;FY9AnQkMVrRFW7aJUqt5&quot;,    # senha
-</span><span id="__span-30-33"><a id="__codelineno-30-33" name="__codelineno-30-33" href="#__codelineno-30-33"></a>                                                 upgrade = &quot;never&quot;,    # não encontrei esse argumento
-</span><span id="__span-30-34"><a id="__codelineno-30-34" name="__codelineno-30-34" href="#__codelineno-30-34"></a>                                                 ask = FALSE ),    # não encontrei esse argumento
-</span><span id="__span-30-35"><a id="__codelineno-30-35" name="__codelineno-30-35" href="#__codelineno-30-35"></a>         github = devtools::install_github(repo = paste0(&quot;splor-mg/&quot;, pkg),    # se remote = github, especifica o repositório &quot;username/repo&quot;
-</span><span id="__span-30-36"><a id="__codelineno-30-36" name="__codelineno-30-36" href="#__codelineno-30-36"></a>                                                  ref = paste0(&quot;v&quot;, version),    # referência ao git (commit, tag, branch...)
-</span><span id="__span-30-37"><a id="__codelineno-30-37" name="__codelineno-30-37" href="#__codelineno-30-37"></a>                                                  auth_token = personal_token),    # token pessoal, para acessar repositório privado
-</span><span id="__span-30-38"><a id="__codelineno-30-38" name="__codelineno-30-38" href="#__codelineno-30-38"></a>         stop(&quot;Não é possível instalar o pacote do remote especificado.&quot;))    # interrompe a execução
-</span><span id="__span-30-39"><a id="__codelineno-30-39" name="__codelineno-30-39" href="#__codelineno-30-39"></a>}
+</span><span id="__span-30-29"><a id="__codelineno-30-29" name="__codelineno-30-29" href="#__codelineno-30-29"></a>         github = devtools::install_github(repo = paste0(&quot;splor-mg/&quot;, pkg),    # se remote = github, especifica o repositório &quot;username/repo&quot;
+</span><span id="__span-30-30"><a id="__codelineno-30-30" name="__codelineno-30-30" href="#__codelineno-30-30"></a>                                                  ref = paste0(&quot;v&quot;, version),    # referência ao git (commit, tag, branch...)
+</span><span id="__span-30-31"><a id="__codelineno-30-31" name="__codelineno-30-31" href="#__codelineno-30-31"></a>                                                  auth_token = personal_token),    # token pessoal, para acessar repositório privado
+</span><span id="__span-30-32"><a id="__codelineno-30-32" name="__codelineno-30-32" href="#__codelineno-30-32"></a>         stop(&quot;Não é possível instalar o pacote do remote especificado.&quot;))    # interrompe a execução
+</span><span id="__span-30-33"><a id="__codelineno-30-33" name="__codelineno-30-33" href="#__codelineno-30-33"></a>}
 </span></code></pre></div>
 </details>
 </details>
