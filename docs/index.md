@@ -1,23 +1,23 @@
 # Arquivo reestimativa_2026.bat
 
 ```
-E:
-cd E:\QlikView\dcgf\reestimativa_2026
-git checkout . && git pull
-make r_update
-make copy_exec && make build && make deploy && qv /r reestimativa_2026.qvw 2> reestimativa.log
-type reestimativa.log >> logs/log.Rout
-rm reestimativa.log
-source venv/Scripts/activate
-make sharepoint
+E:    # altera unidade
+cd E:\QlikView\dcgf\reestimativa_2026    # altera diretório
+git checkout . && git pull    # descarta alterações locais e atualiza o respositório
+make r_update    # executa "make r_update"
+make copy_exec && make build && make deploy && qv /r reestimativa_2026.qvw 2> reestimativa.log    # executa os "make ..." e "reestimativa_2026.qvw" e redireciona o stderr para "reestimativa.log"
+type reestimativa.log >> logs/log.Rout    # anexa o conteúdo do "reestimativa.log" ao "logs/log.Rout"
+rm reestimativa.log    # remove o arquivo "reestimativa.log"
+source venv/Scripts/activate    # ativa um ambiente virtual Python
+make sharepoint    # executa "make sharepoint"
 ```
+
+* **reestimativa_2026.qvw**: painel no Qlik para visualização dos dados
 
 # make r_update
 
-O "make r_update" atualiza bibliotecas do R, mas aparentemente não está funcionando.
-
 ```
-.PHONY: help build munge test clean r_update sharepoint
+.PHONY: help build munge test clean r_update sharepoint    # marca alvos que não são arquivos
 
 #====================================================================
 r_update: logs/r_update.Rout
@@ -25,34 +25,51 @@ r_update: logs/r_update.Rout
 logs/r_update.Rout: ./config/config.yaml
 	@echo "Atualizando/instalando pacotes..."
 	@Rscript --verbose config/R/update_pkgs.R $@ 2> logs/r_update.Rout
-
-sharepoint:
-	@python code/python/sharepoint_utils.py
 ```
 
-`.PHONY` é do Make, usada para declarar targets “falsos”. Caso haja um arquivo com o mesmo nome do comando, o Make irá considerar o comando.
+* **r_update**: depende do arquivo "logs/r_update.Rout"; gera/atualiza esse arquivo
 
-```
-.PHONY: help build munge test clean r_update sharepoint
-```
+    ```
+    r_update: logs/r_update.Rout
+    ```
 
-No Makefiles, "r_update" é um alvo que depende do arquivo "logs/r_update.Rout".
+* **logs/r_update.Rout**: depende do arquivo "./config/config.yaml"; executa o script R "config/R/update_pkgs.R", que atualiza/instala os pacotes
 
-```
-r_update: logs/r_update.Rout
-```
+    ```
+    logs/r_update.Rout: ./config/config.yaml
+      @echo "Atualizando/instalando pacotes..."
+      @Rscript --verbose config/R/update_pkgs.R $@ 2> logs/r_update.Rout
+    ```
 
-E este arquivo é construído a seguir, com base no arquivo "config.yaml".
+    ??? note "config/R/update_pkgs.R"
+        Instala os pacotes conforme "version:" e "remote:" especificados no "config.yaml".
 
-```
-logs/r_update.Rout: ./config/config.yaml
-	@echo "Atualizando/instalando pacotes..."
-	@Rscript --verbose config/R/update_pkgs.R $@ 2> logs/r_update.Rout
-```
+        Obs.: estrutura muito parecida com o "check_pkg_version.R", que é executado no "$(MUNGE_FILES)"
 
-Ele checa se o "config.yaml" foi modificado ou se "r_update.Rout" não existe. Então, atualiza/instala os pacotes, conforme funções dos arquivos "update_pkgs.R" e "helper.R".
+        ```
+        source("config/R/helper.R")    # carrega funções auxiliares definidas em helper.R
 
-!!! warning "Depois estudar estes dois arquivos"
+        update_infra_pkgs()    # instala pacotes yaml e devtools que permitem restante do fluxo
+
+        config <- yaml::yaml.load_file("config/config.yaml")    # lê o arquivo "congif.yaml
+
+        required_versions <- lapply(config$pkgs, `[[`, "version")    # lista nomeada, em que o nome é o "pkgs" e o valor é o "version"
+
+        # vetor com TRUE/FALSE informando se o pacote precisa ser atualizado
+        update_pkg <- Map(need_update,    # retorna TRUE, se precisar instalar/atualizar, e FALSE, caso contrário
+                          names(config$pkgs),    # lista os pacotes da chave "pkgs" do arquivo "config.yaml"
+                          required_versions)
+
+        # retorna o nome "pkgs", dos "pkg" que devem ser atualizados/instalados (need_update = TRUE)
+        update_pkg <- update_pkg[update_pkg==TRUE]
+
+        for (pkg in names(update_pkg)) {    # para cada "pkg" que estiver em "update_pkg"...
+
+        install_pkg(pkg, # ? preciso dar detach nos pacotes antes de instalar??
+                    config$pkgs[[pkg]]$version,
+                    config$pkgs[[pkg]]$remote)    # ...instala o pacote, na versão e no remote especificados no "config.yaml"
+        }
+        ```
 
 
 # make copy_exec
@@ -94,7 +111,7 @@ copy_exec_alem_credito:
 	@Rscript --verbose config/R/copy.R $@ 2> logs/log.Rout
 ```
 
-* **copy_exec**: garante que o alvo principal dependa de todos os "TARGETS_COPY_EXEC".
+* **copy_exec**: depende da lista "$(TARGETS_COPY_EXEC)"; gera/atualiza esses arquivos
 
     ```
     copy_exec: $(TARGETS_COPY_EXEC)
@@ -167,7 +184,7 @@ copy_exec_alem_credito:
 
         * **2> logs/log.Rout**: redireciona o "stderr" do processo para o arquivo de log.
 
-* **copy_exec_rec (exemplo)**: baixa o arquivo "exec_rec.xlsx" do e-mail na pasta "data-row", além de limpar filtro e formatação da planilha.
+* **copy_exec_rec (exemplo)**: baixa o arquivo "exec_rec.xlsx" do e-mail na pasta "data-row/", além de limpar filtro e formatação da planilha
 
     ??? note "copy_exec_exec"
         Caso o "copy_exec_rec" seja um target, ele será listado no "copy_exec".
@@ -189,7 +206,7 @@ copy_exec_alem_credito:
 
             ```
             suppressPackageStartupMessages(library(gmailr))    # usa a biblioteca gmailr
-            source("config/R/helper_copy.R")    # usa as funções auxiliares do arquivo "helper_copy"
+            source("config/R/helper_copy.R")    # carrega funções auxiliares definidas em helper_copy.R
 
             arg <- commandArgs(trailingOnly = TRUE)    # retorna argumentos de linha de comando (no caso, "copy_exec_rec")
             base <- guess_base(arg)    # retorna a palavra depois do primeiro "_" (no caso, "exec")
@@ -365,14 +382,14 @@ copy_exec_alem_credito:
 # make build
 
 ```
-.PHONY: help build munge test clean r_update sharepoint
+.PHONY: help build munge test clean r_update sharepoint    # marca alvos que não são arquivos
 
-#====================================================================
-MUNGE_FILES := $(shell Rscript --verbose config/R/generate_munge_files.R 2> logs/log.Rout)
-EXEC_FILES := $(shell Rscript --verbose config/R/generate_exec_files.R 2> logs/log.Rout)
-TEST_FILES := $(shell Rscript --verbose config/R/generate_test_files.R 2> logs/log.Rout)
-LIB := $(wildcard code/R/lib/*.R)
-CONFIG := config/config.yaml
+#====================================================================    # variáveis
+MUNGE_FILES := $(shell Rscript --verbose config/R/generate_munge_files.R 2> logs/log.Rout)    # lista o caminho de alguns arquivos "data/*.csv"
+EXEC_FILES := $(shell Rscript --verbose config/R/generate_exec_files.R 2> logs/log.Rout)    # lista o caminho de alguns arquivos "data-raw/exec_*.xlsx"
+TEST_FILES := $(shell Rscript --verbose config/R/generate_test_files.R 2> logs/log.Rout)    # lista o caminho de alguns arquivos "tests/test/test_*.R"
+LIB := $(wildcard code/R/lib/*.R)    # lista o caminho dos arquivos "code/R/lib/*.R"
+CONFIG := config/config.yaml    # ista o caminho "config/config.yaml"
 
 #====================================================================
 build: munge data/metadados.csv data/testes.csv code/qvw/load_bases.qvs ## Atualiza make munge, testes de consistência e metadados das bases execução
@@ -386,22 +403,22 @@ munge: $(MUNGE_FILES) ## Atualiza as bases presentes em data/ que possuem script
 	@echo "-----------------------------------------------------"
 
 #====================================================================
-$(MUNGE_FILES): data/%.csv: code/R/munge/%.R data-raw/%.xlsx $(CONFIG) $(LIB)
-	@Rscript --verbose config/R/check_pkg_version.R 2> logs/log.Rout
+$(MUNGE_FILES): data/%.csv: code/R/munge/%.R data-raw/%.xlsx $(CONFIG) $(LIB)    # gnu.org/software/make/manual/html_node/Static-Usage.html
+	@Rscript --verbose config/R/check_pkg_version.R 2> logs/log.Rout    # instala/atualiza pacotes exigidos
 	@echo "Atualizando $*..."
-	@Rscript --verbose $< 2> logs/log.Rout
+	@Rscript --verbose $< 2> logs/log.Rout    # transforma os arquivos "data-raw/%.xlsx" e salva nos "data/%.csv"
 
 data/metadados.csv: config/R/metadados.R $(EXEC_FILES) $(CONFIG) $(LIB)
 	@echo "Atualizando metadados..."
-	@Rscript --verbose $< 2> logs/log.Rout
+	@Rscript --verbose $< 2> logs/log.Rout    # gera "data/metadados.csv" com a aba "metadados" das planilhas "data-raw/exec_*.xlsx"
 
 data/testes.csv: tests/test.R $(TEST_FILES) $(MUNGE_FILES) $(CONFIG) $(LIB)
 	@echo "Atualizando testes..."
-	@Rscript --verbose $< 2> logs/log.Rout
+	@Rscript --verbose $< 2> logs/log.Rout    # gera "data/testes.csv", que valida receita e despesa das planilhas "data/*.csv"
 
 code/qvw/load_bases.qvs: config/R/load_bases.R $(CONFIG)
 	@echo "Atualizando load_bases..."
-	@Rscript --verbose $< 2> logs/log.Rout
+	@Rscript --verbose $< 2> logs/log.Rout    # gera "load_bases.qvs" informando quais arquivos "data*.csv" serão carregados
 ```
 
 * **MUNGE_FILES**: lista o caminho dos arquivos "data/%.csv", criados com base na lista "munge_base: yes" do arquivo "config.yaml"
@@ -708,9 +725,9 @@ code/qvw/load_bases.qvs: config/R/load_bases.R $(CONFIG)
             Além disso, atualiza "RECEITA_COD" com os códigos mais recentes (conforme de-para "add_de_para_receita_tbl").
 
             ```
-            library(relatorios)
-            source("code/R/lib/set_criterios_rec.R")
-            source("code/R/lib/demonstrativo_fiscal.R")
+            library(relatorios)    # carrega a biblioteca "relatorios"
+            source("code/R/lib/set_criterios_rec.R")    # carrega funções auxiliares definidas em set_criterios_rec.R
+            source("code/R/lib/demonstrativo_fiscal.R")    # carrega funções auxiliares definidas em demonstrativo_fiscal.R
 
             base <- reest::ler_reest_rec("data-raw/reest_rec.xlsx")    # lê o arquivo correspondente no "data-raw/", no caso, "reest_rec.xlsx"
 
@@ -1164,77 +1181,251 @@ code/qvw/load_bases.qvs: config/R/load_bases.R $(CONFIG)
                 Obs.: arquivo "test_ldo.R" vazio
 
 
-* **code/qvw/load_bases.qvs**:
+* **code/qvw/load_bases.qvs**: gera/atualiza o arquivo "load_bases.qvs" informando quais arquivos "data\*.csv" serão carregados
 
     ??? note "code/qvw/load_bases.qvs"
         Quando qualquer um dos pré-requisitos for mais novo, roda o script R "config/R/load_bases.R" para gerar ou atualizar o "code/qvw/load_bases.qvs".
 
+        O script R gera um arquivo .qvs contendo vários blocos com os "data/*.csv" que serão carregados. Os arquivos são escolhidos com base na lista "munge_base: yes" do arquivo "config.yaml".
+
         ```
         code/qvw/load_bases.qvs: config/R/load_bases.R $(CONFIG)
           @echo "Atualizando load_bases..."
-          @Rscript --verbose $< 2> logs/log.Rout
+          @Rscript --verbose $< 2> logs/log.Rout    # executa "load_bases.R"
         ```
 
         ??? note "config/R/load_bases.R"
+            Gera o arquivo load_bases.qvs, com vários blocos de texto "LOAD * FROM data\<stem>.csv (txt, utf8, embedded labels, delimiter is ';', msq); CONCATENATE"
+
             ```
-            config <- yaml::yaml.load_file("config/config.yaml")
-            stem <- names(config$munge_base)[as.logical(config$munge_base)]
+            config <- yaml::yaml.load_file("config/config.yaml")    # lê o arquivo "congif.yaml"
+            stem <- names(config$munge_base)[as.logical(config$munge_base)]    # lista os nomes com "yes" no "munge_base"
 
-            msg_prefix <- "  LOAD *\n  FROM\n  data\\"
+            msg_prefix <- "  LOAD *\n  FROM\n  data\\"    # LOAD * FROM data\
 
-            msg_suffix <- ".csv\n
+            msg_suffix <- ".csv\n    # .csv (txt, utf8, embedded labels, delimiter is ';', msq); CONCATENATE
               (txt, utf8, embedded labels, delimiter is ';', msq);
               \n  CONCATENATE\n\n"
 
-            output <- paste0(msg_prefix, stem, msg_suffix)
+            output <- paste0(msg_prefix, stem, msg_suffix)    # LOAD * FROM data\<stem>.csv (txt, utf8, embedded labels, delimiter is ';', msq); CONCATENATE
 
-            output[length(output)] <- gsub("CONCATENATE", "", output[length(output)])
+            # length retorna quantos blocos foram gerados (quantos "output"), então output[length()] vai retornar o último bloco
+            output[length(output)] <- gsub("CONCATENATE", "", output[length(output)])    # substitui "CONCATENATE" por "" no último bloco
 
-            write(output, file = "code/qvw/load_bases.qvs")
+            write(output, file = "code/qvw/load_bases.qvs")    # gera um .qvs com vários blocos "LOAD * FROM data\<stem>.csv ..."
             ```
 
             ??? note "load_bases.qvs"
-            ```
-              LOAD *
-              FROM
-              data\loa_rec.csv
+                Gera uma única tabela com o conteúdo de data\*.csv.
 
-              (txt, utf8, embedded labels, delimiter is ';', msq);
+                ```
+                  LOAD *    # carrega todas as colunas
+                  FROM
+                  data\loa_rec.csv    # do arquivo especificado
 
-              CONCATENATE
-              ```
+                  (txt, utf8, embedded labels, delimiter is ';', msq);    # define o formado do arquivo
+
+                  CONCATENATE    # o próximo LOAD será concatenado à mesma tabela (mesma estrutura de colunas)
+                ```
 
 
-## munge
+* **munge**: depende da lista "$(MUNGE_FILES)"; gera/atualiza esses arquivos
 
-Ao executar o `make build`, o make executa tudo que for necessário para o alvo `munge`, no caso, atualizar os .csv, além de atualizar `metadados.csv`, `testes.csv` e `load_bases.qvs`.
+    ??? note "munge"
+        Avisa que "$(MUNGE_FILES)" foram gerados.
+
+        ```
+        munge: $(MUNGE_FILES)
+          @echo
+          @echo "Munging completo."
+          @echo "-----------------------------------------------------"
+        ```
+
+* **build**: gera/atualiza os arquivos "$(MUNGE_FILES)", "data/metadados.csv", "data/testes.csv" e "code/qvw/load_bases.qvs"
+
+    ??? note "build"
+        Avisa que os arquivos "$(MUNGE_FILES)", "data/metadados.csv", "data/testes.csv" e "code/qvw/load_bases.qvs" foram gerados.
+
+        ```
+        build: munge data/metadados.csv data/testes.csv code/qvw/load_bases.qvs
+          @echo
+          @echo "Build completo."
+          @echo "-----------------------------------------------------"
+        ```
+
+# make deploy
+Os arquivos rastreados que tiveram alterações feitas a partir dos processos anteriores (make copy_exec e make build) são adicionados no GitLab(?).
 
 ```
-build: munge data/metadados.csv data/testes.csv code/qvw/load_bases.qvs
-	@echo
-	@echo "Build completo."
+deploy: ## Faz commit e push das alterações
+	@echo "Atualizando GitLab..."
+	@echo "-----------------------------------------------------"
+	@git add -u    # adiciona arquivos já rastreados que foram modificados e deletados
+	@git commit -m "Atualiza bases de dados da execução"    # faz o commit
+	@git push origin main    # envia as modificações para o git na branch main
+	@git rev-parse --short HEAD > logs/commit.txt    # captura o hash do commit atual e grava em "logs/commit.txt"
+	@echo "Deploy completo."    # avisa que o processo foi concluído
 	@echo "-----------------------------------------------------"
 ```
 
-O alvo `munge`, por sua vez depende da lista `$(MUNGE_FILES)`.
+# make sharepoint
 
 ```
-munge: $(MUNGE_FILES)
-	@echo
-	@echo "Munging completo."
-	@echo "-----------------------------------------------------"
+.PHONY: help build munge test clean r_update sharepoint    # marca alvos que não são arquivos
+
+#====================================================================
+sharepoint:
+	@python code/python/sharepoint_utils.py    # executa o script Python "sharepoint_utils.py"
 ```
 
-O alvo `$(MUNGE_FILES)`, por sua vez, tem como alvo `data/%.csv`, que depende de `code/R/munge/%.R`, um script R correspondente, de `data-raw/%.xlsx`, uma planilha fonte, e de `$(CONFIG)` e `$(LIB)`, outras dependências comuns, definidas em outra parte do makefile.
+??? note "sharepoint_utils.py"
+    ```
+    import os, msal, pickle
+    from pathlib import Path
+    from dotenv import load_dotenv
 
-```
-$(MUNGE_FILES): data/%.csv: code/R/munge/%.R data-raw/%.xlsx $(CONFIG) $(LIB)
-	@Rscript --verbose config/R/check_pkg_version.R 2> logs/log.Rout
-	@echo "Atualizando $*..."
-	@Rscript --verbose $< 2> logs/log.Rout
-```
+    load_dotenv()
+
+    import requests
+
+    base_url = "https://cecad365.sharepoint.com/sites/Splor"
+    caminho_pasta = Path("data/")
+    folder_path = "/sites/Splor/Documentos Compartilhados/General/@dcaf/reestimativa_2024/git/data"
+
+    config = {
+      "authority": os.environ.get('AUTHORITY'),
+      "client_id": os.environ.get('CLIENT_ID'),
+      "scope": [os.environ.get('SCOPE')], #["Group.ReadWrite.All"],
+      "username": os.environ.get('USERNAME'),
+      "endpoint": os.environ.get('END_POINT'),
+    }
+
+    def get_sharepoint_token():
+
+        # Load the token from the file if it exists
+        token_file_path = 'token.pkl'
+        result = None
+        if os.path.exists(token_file_path):
+            print("Loading local access token token.pkl ...")
+            with open(token_file_path, 'rb') as token_file:
+                result = pickle.load(token_file)
+                print("Access token successfully loaded...")
+
+        app = msal.PublicClientApplication(
+            config["client_id"], authority=config["authority"],
+            )
+
+        # Firstly, check the cache to see if this end user has signed in before
+        accounts = app.get_accounts(username=config.get("username"))
+
+        if not result or "access_token" not in result:
+            print("Fetching a new access token...")
+            result = app.acquire_token_interactive(scopes=config["scope"])
+            with open(token_file_path, 'wb') as token_file:
+                pickle.dump(result, token_file)
+                print(f"New access token saved in {token_file_path}...")
+        return result
 
 
-- faz um munge e outras coisas
+    def download_sharepoint_file(base_url, folder_path, file_name, local_filename):
+        """
+        Downloads a file from SharePoint using dynamic components for the URL.
 
-- munge transforma para pasta "data" (o data-row?)
+        Args:
+            base_url (str): The base SharePoint site URL (e.g., 'https://cecad365.sharepoint.com/sites/Splor').
+            folder_path (str): The relative path to the folder containing the file (e.g., '/Documentos Compartilhados/General').
+            file_name (str): The name of the file to download (e.g., 'datamart.xlsx').
+            local_filename (str): The local path where the file will be saved.
+
+        Returns:
+            bool: True if the file was downloaded successfully, False otherwise.
+        """
+        # Construct the file URL
+        relative_url = f"{folder_path}/{file_name}".replace(" ", "%20")
+        file_url = f"{base_url}/_api/web/GetFileByServerRelativeUrl('{relative_url}')/$value"
+
+        # Acquire token using the utility function
+        result = get_sharepoint_token()
+
+        if result and "access_token" in result:
+            print("Access token acquired.")
+            # Download the file
+            response = requests.get(
+                file_url,
+                headers={'Authorization': 'Bearer ' + result['access_token']},
+                stream=True  # Enable streaming
+            )
+            if response.status_code == 200:
+                # Save the file locally in chunks
+
+                Path(local_filename).parent.mkdir(parents=True, exist_ok=True)
+                with open(local_filename, 'wb') as file:
+                    for chunk in response.iter_content(chunk_size=8192):
+                        file.write(chunk)
+                print(f"File downloaded successfully as {local_filename}")
+                return True
+            else:
+                print(f"Failed to download the file. Status code: {response.status_code}")
+                print(response.text)
+                return False
+        else:
+            print("Failed to acquire an access token.")
+            return False
+
+
+    def upload_sharepoint_file(base_url, folder_path, file_name, local_filename):
+        """
+        Uploads a file to SharePoint using dynamic components for the URL.
+        If the file already exists, it will be overwritten.
+
+        Args:
+            base_url (str): The base SharePoint site URL (e.g., 'https://cecad365.sharepoint.com/sites/Splor').
+            folder_path (str): The relative path to the folder where the file will be uploaded (e.g., '/Documentos Compartilhados/General').
+            file_name (str): The name of the file to upload (e.g., 'datamart.txt').
+            local_filename (str): The local path of the file to upload.
+
+        Returns:
+            bool: True if the file was uploaded successfully, False otherwise.
+        """
+        # Construct the upload URL
+        upload_url = f"{base_url}/_api/web/GetFolderByServerRelativeUrl('{folder_path}')/Files/add(url='{file_name}',overwrite=true)"
+
+        # Acquire token using the utility function
+        result = get_sharepoint_token()
+
+        if result and "access_token" in result:
+            print("Access token acquired.")
+            # Read the local file content to upload
+            with open(local_filename, 'rb') as file:
+                file_content = file.read()
+
+            # Upload the file with raw binary data
+            headers = {
+                'Authorization': 'Bearer ' + result['access_token'],
+                'Accept': 'application/json',
+                'Content-Type': 'application/octet-stream'  # Content type for raw binary data
+            }
+
+            response = requests.post(
+                upload_url,
+                headers=headers,
+                data=file_content  # Send the raw binary data as the body
+            )
+
+            if response.status_code in [200, 201]:
+                print(f"File uploaded successfully to {folder_path}/{file_name}")
+                return True
+            else:
+                print(f"Failed to upload the file. Status code: {response.status_code}")
+                print(response.text)
+                return False
+        else:
+            print("Failed to acquire an access token.")
+            return False
+
+    # Iterar por todos os arquivos na pasta
+    for arquivo in caminho_pasta.glob("*.csv"):
+        if arquivo.is_file():
+            print(f"Processando: {arquivo}")
+            upload_sharepoint_file(base_url, folder_path, arquivo.name, str(arquivo))
+    ```
